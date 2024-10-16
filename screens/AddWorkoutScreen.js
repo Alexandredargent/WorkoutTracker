@@ -1,94 +1,254 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, FlatList, TouchableOpacity } from 'react-native';
-import { fetchExercises } from '../services/firebaseexerciseService'; // Import your exercise service
+import React, { useState, useRef, useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Animated } from 'react-native';
+import { format, addDays, subDays } from 'date-fns';
+import DateTimePickerModal from "react-native-modal-datetime-picker";
 
-const AddWorkoutScreen = () => {
-  const [exercises, setExercises] = useState([]); // State for all exercises
-  const [filteredExercises, setFilteredExercises] = useState([]); // State for filtered exercises
-  const [searchQuery, setSearchQuery] = useState(''); // State for search input
+const { width, height } = Dimensions.get('window');
+const ITEM_SIZE = 30;
 
-  // Fetch exercises when the component mounts
+const AddWorkoutScreen = ({ navigation }) => {
+  const today = new Date();
+  const [selectedDate, setSelectedDate] = useState(today);
+  const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
+  const flatListRef = useRef(null);
+  const scrollX = useRef(new Animated.Value(0)).current;
+
+  const [dates, setDates] = useState(() =>
+    Array.from({ length: ITEM_SIZE }, (_, i) => addDays(today, i - Math.floor(ITEM_SIZE / 2)))
+  );
+  
+
+  const handleDatePress = useCallback((date) => {
+    setSelectedDate(date);
+    const index = dates.findIndex(d => d.toDateString() === date.toDateString());
+    flatListRef.current.scrollToIndex({ index, animated: true });
+  }, [dates]);
+
+  const showDatePicker = () => setDatePickerVisibility(true);
+  const hideDatePicker = () => setDatePickerVisibility(false);
+  const handleConfirm = (date) => {
+    hideDatePicker();
+    handleDatePress(date);
+  };
+
+  const [hasItems, setHasItems] = useState(false);
+/*
+  // In your useEffect or wherever you fetch data for the current day
   useEffect(() => {
-    const getExercises = async () => {
-      try {
-        const data = await fetchExercises();
-        setExercises(data);
-        setFilteredExercises(data); // Initialize filtered exercises
-      } catch (error) {
-        console.error('Failed to load exercises:', error);
-      }
-    };
-    getExercises();
+    // Check if there are any exercises or meals for the selected date
+    const itemsExist = checkIfItemsExistForDate(selectedDate);
+    setHasItems(itemsExist);
+  }, [selectedDate]);
+   */
+
+  const renderItem = useCallback(({ item, index }) => {
+    const inputRange = [
+      (index - 1) * width,
+      index * width,
+      (index + 1) * width
+    ];
+    const opacity = scrollX.interpolate({
+      inputRange,
+      outputRange: [0.4, 1, 0.4]
+    });
+  
+    return (
+      <Animated.View style={[styles.carouselItem, { opacity }]}>
+        {!hasItems && (
+          <Text style={styles.emptyMessage}>Diary is empty for this day</Text>
+        )}
+      </Animated.View>
+    );
+  }, [scrollX, hasItems]);
+  
+  
+
+  const getItemLayout = useCallback((_, index) => ({
+    length: width,
+    offset: width * index,
+    index,
+  }), []);
+
+  const onEndReached = useCallback(() => {
+    setDates(prevDates => [
+      ...prevDates,
+      ...Array.from({ length: ITEM_SIZE }, (_, i) => addDays(prevDates[prevDates.length - 1], i + 1))
+    ]);
   }, []);
 
-  const handleSearch = async (query) => {
-    setSearchQuery(query);
-  
-    if (query) {
-      try {
-        const response = await axios.get(`${BASE_URL}?search=${query}`);
-        setFilteredExercises(response.data); // Mettez à jour avec les exercices filtrés de l'API
-      } catch (error) {
-        console.error('Error fetching exercises:', error);
-      }
-    } else {
-      setFilteredExercises(exercises); // Réinitialiser à tous les exercices si la requête est vide
-    }
-  };
-  
+  const onStartReached = useCallback(() => {
+    setDates(prevDates => [
+      ...Array.from({ length: ITEM_SIZE }, (_, i) => subDays(prevDates[0], ITEM_SIZE - i)),
+      ...prevDates
+    ]);
+  }, []);
 
-  // Render each exercise item
-  const renderExerciseItem = ({ item }) => (
-    <TouchableOpacity style={styles.exerciseItem}>
-      <Text style={styles.exerciseName}>{item.name}</Text>
-    </TouchableOpacity>
-  );
+  const onViewableItemsChanged = useCallback(({ viewableItems }) => {
+    if (viewableItems.length > 0) {
+      setSelectedDate(viewableItems[0].item);
+    }
+  }, []);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Add Workout</Text>
-      <TextInput
-        style={styles.searchInput}
-        placeholder="Search exercises..."
-        value={searchQuery}
-        onChangeText={handleSearch}
+      <TouchableOpacity onPress={showDatePicker} style={styles.topDateContainer}>
+        <Text style={styles.topDateText}>{format(selectedDate, 'MMMM d, yyyy')}</Text>
+      </TouchableOpacity>
+
+      <Animated.FlatList
+        ref={flatListRef}
+        data={dates}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.toISOString()}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        snapToInterval={width}
+        decelerationRate="fast"
+        getItemLayout={getItemLayout}
+        onEndReached={onEndReached}
+        onEndReachedThreshold={0.1}
+        onStartReached={onStartReached}
+        onStartReachedThreshold={0.1}
+        initialScrollIndex={Math.floor(ITEM_SIZE / 2)}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+          { useNativeDriver: true }
+        )}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
       />
-      <FlatList
-        data={filteredExercises}
-        renderItem={renderExerciseItem}
-        keyExtractor={item => item.id} // Use a unique key for each item
+
+      <View style={styles.navigationContainer}>
+        <TouchableOpacity onPress={() => handleDatePress(subDays(selectedDate, 1))} style={styles.navButton}>
+          <Text style={styles.navButtonText}>{"<"}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => handleDatePress(addDays(selectedDate, 1))} style={styles.navButton}>
+          <Text style={styles.navButtonText}>{">"}</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.fixedButtonsContainer}>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => navigation.navigate('ExerciseListScreen', { date: format(selectedDate, 'yyyy-MM-dd') })}
+        >
+          <Text style={styles.buttonText}>+ Add Exercise</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() => navigation.navigate('AddMealScreen')}
+        >
+          <Text style={styles.buttonText}>+ Add Meal</Text>
+        </TouchableOpacity>
+      </View>
+
+      <DateTimePickerModal
+        isVisible={isDatePickerVisible}
+        mode="date"
+        onConfirm={handleConfirm}
+        onCancel={hideDatePicker}
       />
     </View>
   );
 };
 
-// Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    backgroundColor: '#dad7d7',
   },
-  title: {
+  
+  topDateContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#232799',
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    zIndex: 1,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  topDateText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
+  },
+  
+  
+  carouselItem: {
+    width: width * 0.98, // Slightly smaller than full width
+    height: height * 0.98, // Slightly smaller than full height
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 15, // Slightly reduced border radius
+    marginHorizontal: width * 0.01, // Consistent horizontal margin
+    marginVertical: height * 0.01, // Consistent vertical margin
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    elevation: 5, // for Android
+  },
+  
+
+
+  panelText: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 16,
+    color: '#232799',
   },
-  searchInput: {
-    height: 40,
-    borderColor: 'gray',
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 8,
-    marginBottom: 16,
+  navigationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    position: 'absolute',
+    top: '50%',
+    width: '100%',
+    paddingHorizontal: 20,
   },
-  exerciseItem: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+  navButton: {
+    backgroundColor: 'rgba(35, 39, 153, 0.7)',
+    borderRadius: 25,
+    padding: 15,
   },
-  exerciseName: {
+  navButtonText: {
+    color: '#FFFFFF',
+    fontSize: 24,
+  },
+  fixedButtonsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    padding: 20,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#ddd',
+  },
+  addButton: {
+    backgroundColor: '#232799',
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 30,
+    elevation: 5,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  emptyMessage: {
     fontSize: 18,
+    color: '#888',
+    textAlign: 'center',
   },
+  
 });
 
 export default AddWorkoutScreen;

@@ -4,7 +4,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import MainNavigator from './components/MainNavigator';
 import LoginScreen from './screens/LoginScreen'; 
 import SignUpScreen from './screens/SignUpScreen'; 
-import AccountScreen from './screens/AccountScreen'; 
+import AccountScreen from './screens/AccountScreen';
+import ExerciseListScreen from './screens/ExerciseListScreen'; 
 import { auth } from './services/firebase'; // Importez votre configuration Firebase
 import { onAuthStateChanged } from 'firebase/auth';
 
@@ -45,6 +46,7 @@ export default function App() {
                  component={AccountScreen} 
                  options={{ title: 'Gestion du Compte' }} 
                />
+               <Stack.Screen name="ExerciseListScreen" component={ExerciseListScreen} />
 
             </Stack.Navigator>
         </NavigationContainer>
