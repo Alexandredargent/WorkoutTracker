@@ -46,7 +46,11 @@ export default function App() {
                  component={AccountScreen} 
                  options={{ title: 'Gestion du Compte' }} 
                />
-               <Stack.Screen name="ExerciseListScreen" component={ExerciseListScreen} />
+               <Stack.Screen 
+                 name="ExerciseListScreen" 
+                 component={ExerciseListScreen} 
+                 options={{ title: 'Add Exercise' }}
+               />
 
             </Stack.Navigator>
         </NavigationContainer>
