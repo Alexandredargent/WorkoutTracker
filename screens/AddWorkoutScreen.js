@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, FlatList, SafeAreaView, StatusBar, Platform, PanResponder, Animated, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, FlatList, SafeAreaView, StatusBar, Platform, PanResponder, Animated, Dimensions, ActivityIndicator, TextInput, Alert } from 'react-native';
 import { format, addDays, subDays } from 'date-fns';
 import DateTimePickerModal from "react-native-modal-datetime-picker";
-import { fetchDiaryEntriesForDate, addExerciseToDiary } from '../services/diaryService.js';
+import { fetchDiaryEntriesForDate, addExerciseToDiary, addSetToExercise } from '../services/diaryService.js';
 import { auth } from '../services/firebase.js';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -15,6 +15,10 @@ const AddWorkoutScreen = ({ navigation, route }) => {
   const [entries, setEntries] = useState([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [exerciseInputs, setExerciseInputs] = useState({});
+  const [reps, setReps] = useState('');
+  const [weight, setWeight] = useState('');
+
 
   const pan = useRef(new Animated.ValueXY()).current;
   const opacity = useRef(new Animated.Value(1)).current;
@@ -37,62 +41,10 @@ const AddWorkoutScreen = ({ navigation, route }) => {
       let newDate;
       if (gestureState.dx > 100) {
         newDate = subDays(selectedDate, 1);
-        Animated.parallel([
-          Animated.timing(pan.x, {
-            toValue: width,
-            duration: 300,
-            useNativeDriver: false
-          }),
-          Animated.timing(opacity, {
-            toValue: 0,
-            duration: 300,
-            useNativeDriver: false
-          })
-        ]).start(() => {
-          handleDateChange(newDate);
-          pan.setValue({ x: -width, y: 0 });
-          Animated.parallel([
-            Animated.spring(pan.x, {
-              toValue: 0,
-              useNativeDriver: false,
-              friction: 8,
-            }),
-            Animated.timing(opacity, {
-              toValue: 1,
-              duration: 300,
-              useNativeDriver: false
-            })
-          ]).start();
-        });
+        animatePageChange(newDate, width);
       } else if (gestureState.dx < -100) {
         newDate = addDays(selectedDate, 1);
-        Animated.parallel([
-          Animated.timing(pan.x, {
-            toValue: -width,
-            duration: 300,
-            useNativeDriver: false
-          }),
-          Animated.timing(opacity, {
-            toValue: 0,
-            duration: 300,
-            useNativeDriver: false
-          })
-        ]).start(() => {
-          handleDateChange(newDate);
-          pan.setValue({ x: width, y: 0 });
-          Animated.parallel([
-            Animated.spring(pan.x, {
-              toValue: 0,
-              useNativeDriver: false,
-              friction: 8,
-            }),
-            Animated.timing(opacity, {
-              toValue: 1,
-              duration: 300,
-              useNativeDriver: false
-            })
-          ]).start();
-        });
+        animatePageChange(newDate, -width);
       } else {
         Animated.spring(pan, {
           toValue: { x: 0, y: 0 },
@@ -102,6 +54,36 @@ const AddWorkoutScreen = ({ navigation, route }) => {
       }
     }
   });
+
+  const animatePageChange = (newDate, toValue) => {
+    Animated.parallel([
+      Animated.timing(pan.x, {
+        toValue: toValue,
+        duration: 300,
+        useNativeDriver: false
+      }),
+      Animated.timing(opacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: false
+      })
+    ]).start(() => {
+      handleDateChange(newDate);
+      pan.setValue({ x: -toValue, y: 0 });
+      Animated.parallel([
+        Animated.spring(pan.x, {
+          toValue: 0,
+          useNativeDriver: false,
+          friction: 8,
+        }),
+        Animated.timing(opacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: false
+        })
+      ]).start();
+    });
+  };
 
   useEffect(() => {
     const fetchEntries = async () => {
@@ -146,17 +128,91 @@ const AddWorkoutScreen = ({ navigation, route }) => {
     handleDateChange(date);
   };
 
+  const handleInputChange = (id, type, value) => {
+    setExerciseInputs(prevInputs => ({
+      ...prevInputs,
+      [id]: { ...prevInputs[id], [type]: value },
+    }));
+  };
+
+  const handleAddSet = async (entryId) => {
+    const reps = exerciseInputs[entryId]?.reps;
+    const weight = exerciseInputs[entryId]?.weight;
+  
+    if (!reps || !weight) {
+      Alert.alert('Input Error', 'Please enter both reps and weight.');
+      return;
+    }
+  
+    const set = {
+      reps: parseInt(reps),
+      weight: parseFloat(weight),
+      timestamp: new Date().toISOString()
+    };
+  
+    try {
+      const userId = auth.currentUser.uid;
+      await addSetToExercise(userId, entryId, set);
+      setExerciseInputs(prevInputs => ({
+        ...prevInputs,
+        [entryId]: { reps: '', weight: '' }
+      }));
+      setRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      console.error('Error adding set:', error);
+      Alert.alert('Error', 'Failed to add set. Please try again.');
+    }
+  };
+  
+  
+
   const renderExerciseItem = ({ item }) => (
     <View style={styles.exerciseItem}>
-      <Ionicons name="barbell-outline" size={24} color="#232799" />
-      <Text style={styles.exerciseText}>{item.exerciseName}</Text>
+      <View style={styles.exerciseHeader}>
+        <Ionicons name="barbell-outline" size={24} color="#232799" />
+        <Text style={styles.exerciseText}>{item.exerciseName}</Text>
+      </View>
+      <View style={styles.setInputContainer}>
+        <TextInput
+          style={styles.input}
+          placeholder="Reps"
+          value={exerciseInputs[item.id]?.reps || ''}
+          onChangeText={(value) => handleInputChange(item.id, 'reps', value)}
+          keyboardType="numeric"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Weight"
+          value={exerciseInputs[item.id]?.weight || ''}
+          onChangeText={(value) => handleInputChange(item.id, 'weight', value)}
+          keyboardType="numeric"
+        />
+        <TouchableOpacity
+          style={styles.addSetButton}
+          onPress={() => handleAddSet(item.id)}
+        >
+          <Text style={styles.addSetButtonText}>Add Set</Text>
+        </TouchableOpacity>
+      </View>
+      {item.sets && (
+        <FlatList
+          data={item.sets}
+          keyExtractor={(set, index) => index.toString()}
+          renderItem={({ item: set }) => (
+            <View style={styles.setItem}>
+              <Text style={styles.setText}>
+                {set.reps} reps @ {set.weight} kg
+              </Text>
+            </View>
+          )}
+        />
+      )}
     </View>
   );
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        <View style={styles.topMenuSpace} />
         <View style={styles.header}>
           <TouchableOpacity onPress={() => handleDateChange(subDays(selectedDate, 1))}>
             <Ionicons name="chevron-back" size={24} color="#232799" />
@@ -181,7 +237,7 @@ const AddWorkoutScreen = ({ navigation, route }) => {
           {...panResponder.panHandlers}
         >
           <View style={styles.entriesContainer}>
-          {loading ? (
+            {loading ? (
               <View style={styles.centerContent}>
                 <ActivityIndicator size="large" color="#232799" />
               </View>
@@ -228,19 +284,13 @@ const AddWorkoutScreen = ({ navigation, route }) => {
     </SafeAreaView>
   );
 };
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    backgroundColor: 'transparent',
   },
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  topMenuSpace: {
-    height: 50,
     backgroundColor: '#f5f5f5',
   },
   header: {
@@ -289,10 +339,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingText: {
-    fontSize: 18,
-    color: '#888',
-  },
   emptyMessage: {
     fontSize: 16,
     color: '#888',
@@ -302,15 +348,53 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   exerciseItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
+  exerciseHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   exerciseText: {
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: '600',
     marginLeft: 12,
+    color: '#333',
+  },
+  setInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  input: {
+    flex: 1,
+    height: 40,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    marginRight: 8,
+  },
+  addSetButton: {
+    backgroundColor: '#232799',
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 4,
+  },
+  addSetButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  setItem: {
+    backgroundColor: '#f9f9f9',
+    padding: 8,
+    borderRadius: 4,
+    marginBottom: 4,
+  },
+  setText: {
+    fontSize: 14,
     color: '#333',
   },
   fixedButtonsContainer: {

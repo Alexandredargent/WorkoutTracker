@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, TouchableOpacity, Text, StyleSheet, Animated, Dimensions, PanResponder } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet, Animated, Dimensions, PanResponder, SafeAreaView, Platform, StatusBar } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -77,10 +77,15 @@ const MainNavigator = ({ user, setUser, navigation }) => {
   });
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity style={styles.menuIcon} onPress={toggleMenu}>
-        <Ionicons name="menu" size={30} color="#232799" />
-      </TouchableOpacity>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.notificationIcon} onPress={() => {/* Handle notification press */}}>
+          <Ionicons name="notifications-outline" size={30} color="#232799" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.menuIcon} onPress={toggleMenu}>
+          <Ionicons name="menu" size={30} color="#232799" />
+        </TouchableOpacity>
+      </View>
 
       <Animated.View 
         style={[
@@ -133,7 +138,7 @@ const MainNavigator = ({ user, setUser, navigation }) => {
         <Tab.Screen name="AddMeal" component={AddMealScreen} options={{ title: 'Meal' }} />
         <Tab.Screen name="Diary" component={DiaryScreen} />
       </Tab.Navigator>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -142,11 +147,20 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  menuIcon: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 50, 
+    paddingBottom: 10,
     zIndex: 2,
+  },
+  menuIcon: {
+    marginLeft: 15,
+  },
+  notificationIcon: {
+    // Add any specific styles for the notification icon if needed
   },
   menuContainer: {
     position: 'absolute',

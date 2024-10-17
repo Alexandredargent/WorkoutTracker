@@ -1,5 +1,4 @@
-
-import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, updateDoc, arrayUnion, doc } from 'firebase/firestore';
 import { db } from './firebase';
 
 export const addExerciseToDiary = async (userId, date, exercise) => {
@@ -16,7 +15,18 @@ export const addExerciseToDiary = async (userId, date, exercise) => {
     }
   };
   
-
+  export const addSetToExercise = async (userId, entryId, set) => {
+    try {
+      const entryRef = doc(db, 'diaryEntries', entryId);
+      await updateDoc(entryRef, {
+        sets: arrayUnion(set)
+      });
+    } catch (error) {
+      console.error('Error adding set to exercise:', error);
+      throw error;
+    }
+  };
+  
   export const fetchDiaryEntriesForDate = async (userId, date) => {
     try {
       const q = query(
