@@ -6,6 +6,7 @@ import LoginScreen from './screens/LoginScreen';
 import SignUpScreen from './screens/SignUpScreen'; 
 import AccountScreen from './screens/AccountScreen';
 import ExerciseListScreen from './screens/ExerciseListScreen'; 
+import MealListScreen from './screens/MealListScreen'; 
 import { auth } from './services/firebase'; // Importez votre configuration Firebase
 import { onAuthStateChanged } from 'firebase/auth';
 
@@ -50,6 +51,11 @@ export default function App() {
                  name="ExerciseListScreen" 
                  component={ExerciseListScreen} 
                  options={{ title: 'Add Exercise' }}
+               />
+               <Stack.Screen 
+                 name="MealListScreen" 
+                 component={MealListScreen} 
+                 options={{ title: 'Add Meal' }}
                />
 
             </Stack.Navigator>

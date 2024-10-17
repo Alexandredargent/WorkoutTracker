@@ -5,6 +5,8 @@ import DateTimePickerModal from "react-native-modal-datetime-picker";
 import { fetchDiaryEntriesForDate, addExerciseToDiary, addSetToExercise } from '../services/diaryService.js';
 import { auth } from '../services/firebase.js';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+
 
 const { width } = Dimensions.get('window');
 
@@ -84,15 +86,35 @@ const AddWorkoutScreen = ({ navigation, route }) => {
       ]).start();
     });
   };
-
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchEntries = async () => {
+        setLoading(true);
+        const user = auth.currentUser;
+        if (user) {
+          try {
+            const fetchedEntries = await fetchDiaryEntriesForDate(user.uid, format(selectedDate, 'yyyy-MM-dd'));
+            setEntries(fetchedEntries);
+          } catch (error) {
+            console.error('Error fetching diary entries:', error);
+          }
+        } else {
+          console.log('No user is signed in.');
+        }
+        setLoading(false);
+      };
+      fetchEntries();
+    }, [selectedDate])
+  );
+  
   useEffect(() => {
     const fetchEntries = async () => {
       setLoading(true);
       const user = auth.currentUser;
       if (user) {
         try {
-          const entries = await fetchDiaryEntriesForDate(user.uid, format(selectedDate, 'yyyy-MM-dd'));
-          setEntries(entries);
+          const fetchedEntries = await fetchDiaryEntriesForDate(user.uid, format(selectedDate, 'yyyy-MM-dd'));
+          setEntries(fetchedEntries);
         } catch (error) {
           console.error('Error fetching diary entries:', error);
         }
@@ -136,9 +158,6 @@ const AddWorkoutScreen = ({ navigation, route }) => {
   };
 
   const handleAddSet = async (entryId) => {
-    const reps = exerciseInputs[entryId]?.reps;
-    const weight = exerciseInputs[entryId]?.weight;
-  
     if (!reps || !weight) {
       Alert.alert('Input Error', 'Please enter both reps and weight.');
       return;
@@ -151,12 +170,9 @@ const AddWorkoutScreen = ({ navigation, route }) => {
     };
   
     try {
-      const userId = auth.currentUser.uid;
-      await addSetToExercise(userId, entryId, set);
-      setExerciseInputs(prevInputs => ({
-        ...prevInputs,
-        [entryId]: { reps: '', weight: '' }
-      }));
+      await addSetToExercise(entryId, set);
+      setReps('');
+      setWeight('');
       setRefreshTrigger(prev => prev + 1);
     } catch (error) {
       console.error('Error adding set:', error);
@@ -168,23 +184,21 @@ const AddWorkoutScreen = ({ navigation, route }) => {
 
   const renderExerciseItem = ({ item }) => (
     <View style={styles.exerciseItem}>
-      <View style={styles.exerciseHeader}>
-        <Ionicons name="barbell-outline" size={24} color="#232799" />
-        <Text style={styles.exerciseText}>{item.exerciseName}</Text>
-      </View>
+      <Ionicons name="barbell-outline" size={24} color="#232799" />
+      <Text style={styles.exerciseText}>{item.exerciseName}</Text>
       <View style={styles.setInputContainer}>
         <TextInput
           style={styles.input}
           placeholder="Reps"
-          value={exerciseInputs[item.id]?.reps || ''}
-          onChangeText={(value) => handleInputChange(item.id, 'reps', value)}
+          value={reps}
+          onChangeText={setReps}
           keyboardType="numeric"
         />
         <TextInput
           style={styles.input}
           placeholder="Weight"
-          value={exerciseInputs[item.id]?.weight || ''}
-          onChangeText={(value) => handleInputChange(item.id, 'weight', value)}
+          value={weight}
+          onChangeText={setWeight}
           keyboardType="numeric"
         />
         <TouchableOpacity
@@ -199,16 +213,31 @@ const AddWorkoutScreen = ({ navigation, route }) => {
           data={item.sets}
           keyExtractor={(set, index) => index.toString()}
           renderItem={({ item: set }) => (
-            <View style={styles.setItem}>
-              <Text style={styles.setText}>
-                {set.reps} reps @ {set.weight} kg
-              </Text>
-            </View>
+            <Text style={styles.setText}>
+              {set.reps} reps @ {set.weight} kg
+            </Text>
           )}
         />
       )}
     </View>
   );
+
+  const renderMealItem = ({ item }) => (
+    <View style={styles.mealItem}>
+      <Ionicons name="restaurant-outline" size={24} color="#4CAF50" />
+      <Text style={styles.mealText}>{item.mealName}</Text>
+      <Text style={styles.caloriesText}>{item.calories} calories</Text>
+    </View>
+  );
+
+  const renderItem = ({ item }) => {
+    if (item.exerciseName) {
+      return renderExerciseItem({ item });
+    } else if (item.mealName) {
+      return renderMealItem({ item });
+    }
+    return null;
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -225,7 +254,7 @@ const AddWorkoutScreen = ({ navigation, route }) => {
             <Ionicons name="chevron-forward" size={24} color="#232799" />
           </TouchableOpacity>
         </View>
-
+  
         <Animated.View 
           style={[
             styles.animatedContainer,
@@ -250,13 +279,13 @@ const AddWorkoutScreen = ({ navigation, route }) => {
               <FlatList
                 data={entries}
                 keyExtractor={(item) => item.id || item.exerciseName}
-                renderItem={renderExerciseItem}
+                renderItem={renderItem}
                 contentContainerStyle={styles.exerciseList}
               />
             )}
           </View>
         </Animated.View>
-
+  
         <View style={styles.fixedButtonsContainer}>
           <TouchableOpacity
             style={styles.addButton}
@@ -267,13 +296,13 @@ const AddWorkoutScreen = ({ navigation, route }) => {
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.addButton, styles.mealButton]}
-            onPress={() => navigation.navigate('AddMealScreen')}
+            onPress={() => navigation.navigate('MealListScreen', { date: format(selectedDate, 'yyyy-MM-dd') })}
           >
             <Ionicons name="restaurant-outline" size={24} color="#FFF" />
             <Text style={styles.buttonText}>Add Meal</Text>
           </TouchableOpacity>
         </View>
-
+  
         <DateTimePickerModal
           isVisible={isDatePickerVisible}
           mode="date"
@@ -283,6 +312,7 @@ const AddWorkoutScreen = ({ navigation, route }) => {
       </View>
     </SafeAreaView>
   );
+  
 };
 const styles = StyleSheet.create({
   safeArea: {

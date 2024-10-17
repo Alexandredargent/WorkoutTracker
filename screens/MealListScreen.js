@@ -1,65 +1,69 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, ActivityIndicator } from 'react-native';
-import { fetchExercises } from '../services/firebaseExerciseService';
-import { addExerciseToDiary } from '../services/diaryService';
+import { fetchMeals } from '../services/firebaseMealService.js';
+import { addMealToDiary } from '../services/diaryService';
 import { auth } from '../services/firebase';
 import { Ionicons } from '@expo/vector-icons';
 
-const ExerciseListScreen = ({ navigation, route }) => {
-  const [exercises, setExercises] = useState([]);
+const MealListScreen = ({ navigation, route }) => {
+  const [meals, setMeals] = useState([]);
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
   const { date } = route.params;
 
   useEffect(() => {
-    const loadExercises = async () => {
+    const loadMeals = async () => {
       try {
         setLoading(true);
-        const exercisesData = await fetchExercises();
-        setExercises(exercisesData);
+        const mealsData = await fetchMeals();
+        setMeals(mealsData);
       } catch (error) {
-        console.error('Error fetching exercises:', error);
+        console.error('Error fetching meals:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    loadExercises();
+    loadMeals();
   }, []);
 
-  const getFilteredExercises = useCallback(() => {
+  const getFilteredMeals = useCallback(() => {
     if (filter === 'popular') {
-      return exercises.filter(exercise => exercise.isPopular);
+      return meals.filter(meal => meal.isPopular);
     } else if (filter === 'recent') {
-      return [...exercises].sort((a, b) => new Date(b.date) - new Date(a.date));
+      return [...meals].sort((a, b) => new Date(b.date) - new Date(a.date));
     }
-    return exercises;
-  }, [exercises, filter]);
+    return meals;
+  }, [meals, filter]);
 
-  const handleAddExercise = async (exercise) => {
+  const handleAddMeal = async (meal) => {
     const user = auth.currentUser;
     if (user) {
       try {
-        await addExerciseToDiary(user.uid, date, exercise);
-        console.log('Exercise added successfully');
+        await addMealToDiary(user.uid, date, meal);
+        console.log('Meal added successfully');
         navigation.goBack();
       } catch (error) {
-        console.error('Error adding exercise:', error);
+        console.error('Error adding meal:', error);
       }
     } else {
       console.log('No user is signed in.');
     }
   };
 
-  const renderExerciseItem = ({ item }) => (
+  const renderMealItem = ({ item }) => (
     <TouchableOpacity
       style={styles.item}
-      onPress={() => handleAddExercise(item)}
+      onPress={() => handleAddMeal(item)}
     >
       <View style={styles.itemContent}>
-        <Ionicons name="barbell-outline" size={24} color="#232799" style={styles.itemIcon} />
+        <Ionicons name="restaurant-outline" size={24} color="#232799" style={styles.itemIcon} />
         <View style={styles.itemTextContainer}>
           <Text style={styles.itemText}>{item.name}</Text>
+          <Text style={styles.caloriesText}>{item.calories} calories</Text>
+          <Text style={styles.caloriesText}>{item.carbs} carbs</Text>
+          <Text style={styles.caloriesText}>{item.lipids} lipids</Text>
+          <Text style={styles.caloriesText}>{item.proteins} proteins</Text>
           {item.isPopular && <Text style={styles.popularTag}>Popular</Text>}
         </View>
       </View>
@@ -88,17 +92,16 @@ const ExerciseListScreen = ({ navigation, route }) => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
       
-
       <View style={styles.tabs}>
-        {renderTabButton('all', 'All Exercises')}
+        {renderTabButton('all', 'All Meals')}
         {renderTabButton('popular', 'Popular')}
         {renderTabButton('recent', 'Recent')}
       </View>
 
       <FlatList
-        data={getFilteredExercises()}
+        data={getFilteredMeals()}
         keyExtractor={(item) => item.id}
-        renderItem={renderExerciseItem}
+        renderItem={renderMealItem}
         contentContainerStyle={styles.listContent}
       />
     </SafeAreaView>
@@ -115,13 +118,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F4F6F9',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginVertical: 20,
-    marginHorizontal: 20,
-    color: '#232799',
   },
   tabs: {
     flexDirection: 'row',
@@ -192,6 +188,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#333',
   },
+  caloriesText: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 2,
+  },
   popularTag: {
     fontSize: 12,
     color: '#232799',
@@ -200,4 +201,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ExerciseListScreen;
+export default MealListScreen;
