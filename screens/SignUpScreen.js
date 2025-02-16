@@ -4,47 +4,121 @@ import {
   TextInput, 
   Text, 
   StyleSheet, 
-  Alert, 
   TouchableOpacity, 
   Image,
   KeyboardAvoidingView,
   Platform,
-  Animated
+  Animated,
+  ScrollView,
+  Keyboard,
+  Alert
 } from 'react-native';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../services/firebase';
+import { useNavigation } from '@react-navigation/native';
+import { db } from '../services/firebase';
+import { doc, getDoc, collection, writeBatch } from 'firebase/firestore';
 
-const SignUpScreen = ({ navigation, setUser }) => {
+const SignUpScreen = ({ setUser }) => {
+  const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [weight, setWeight] = useState('');
-  const [size, setSize] = useState('');
-  const [age, setAge] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
+  const [usernameValid, setUsernameValid] = useState(false);
+  const navigation = useNavigation();
   const fadeAnim = useState(new Animated.Value(0))[0];
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 1000,
+      duration: 500,
       useNativeDriver: true,
     }).start();
   }, []);
 
-  const handleSignUp = async () => {
+  const validateEmail = (email) => {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
+  };
+
+  const validateUsername = (username) => {
+    const re = /^[a-zA-Z0-9_]{3,20}$/;
+    return re.test(username);
+  };
+
+  const validatePassword = (password) => {
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters');
+      return false;
+    }
+    if (!/[A-Z]/.test(password)) {
+      setError('Password must contain at least one uppercase letter');
+      return false;
+    }
+    if (!/[0-9]/.test(password)) {
+      setError('Password must contain at least one number');
+      return false;
+    }
+    return true;
+  };
+
+  const checkUsernameAvailability = async (username) => {
+    try {
+      const usernameDoc = await getDoc(doc(db, 'usernames', username));
+      return !usernameDoc.exists();
+    } catch (error) {
+      console.error('Username check error:', error);
+      return false;
+    }
+  };
+
+  const handleUsernameChange = async (text) => {
+    const formattedUsername = text.toLowerCase().trim();
+    setUsername(formattedUsername);
+    
+    if (!validateUsername(formattedUsername)) {
+      setError('Username must be 3-20 characters (letters, numbers, _)');
+      setUsernameValid(false);
+      return;
+    }
+    
+    const isAvailable = await checkUsernameAvailability(formattedUsername);
+    setUsernameValid(isAvailable);
+    setError(isAvailable ? '' : 'Username already taken');
+  };
+
+  const handleNext = async () => {
+    Keyboard.dismiss();
+    
+    if (!username || !email || !password) {
+      setError('Please fill in all fields');
+      return;
+    }
+
+    if (!usernameValid) {
+      setError('Please choose a valid username');
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+    if (!validatePassword(password)) {
+      return; // Error already set by validatePassword
+    }
+
     setIsLoading(true);
     setError('');
+
     try {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-      setUser(userCredential.user);
-      Alert.alert('Success', 'Your account has been created successfully!', [
-        { text: 'OK', onPress: () => navigation.navigate('Main') }
-      ]);
+      navigation.navigate('FitnessProfileScreen', { 
+        username, 
+        email, 
+        password 
+      });
     } catch (error) {
-      setError(error.message);
-      Alert.alert('Sign Up Error', error.message);
+      setError('Error proceeding to next step');
+      console.error('Navigation error:', error);
     } finally {
       setIsLoading(false);
     }
@@ -54,71 +128,64 @@ const SignUpScreen = ({ navigation, setUser }) => {
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
     >
-      <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
-        <Image
-          source={{ uri: '/placeholder.svg?height=100&width=100' }}
-          style={styles.logo}
-        />
-        <Text style={styles.title}>Create an Account</Text>
-        <View style={styles.inputContainer}>
-          <TextInput
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            style={styles.input}
-            keyboardType="email-address"
-            autoCapitalize="none"
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
+        onScrollBeginDrag={Keyboard.dismiss}
+      >
+        <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+          <Image
+            source={{ uri: '/placeholder.svg?height=100&width=100' }}
+            style={styles.logo}
           />
-    
-          <TextInput
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            style={styles.input}
-          />
-
-          <TextInput
-            placeholder="Weight"
-            value={weight}
-            onChangeText={setWeight}
-            style={styles.input}
-            keyboardType="numeric"
-          />
-
-          <TextInput
-            placeholder="Size"
-            value={size}
-            onChangeText={setSize}
-            style={styles.input}
-            keyboardType="numeric"
-          />
-
-          <TextInput
-            placeholder="Age"
-            value={age}
-            onChangeText={setAge}
-            style={styles.input}
-            keyboardType="numeric"
-          />
-        </View>
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-        <TouchableOpacity 
-          style={styles.button} 
-          onPress={handleSignUp}
-          disabled={isLoading}
-        >
-          <Text style={styles.buttonText}>
-            {isLoading ? 'Creating Account...' : 'Sign Up'}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-          <Text style={styles.link}>
-            Already have an account? Log In
-          </Text>
-        </TouchableOpacity>
-      </Animated.View>
+          <Text style={styles.title}>Create an Account</Text>
+          <View style={styles.inputContainer}>
+            <TextInput
+              placeholder="Username"
+              value={username}
+              onChangeText={handleUsernameChange}
+              style={[
+                styles.input, 
+                username && !usernameValid && styles.invalidInput
+              ]}
+              autoCapitalize="none"
+            />
+            <TextInput
+              placeholder="Email"
+              value={email}
+              onChangeText={setEmail}
+              style={styles.input}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+            <TextInput
+              placeholder="Password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              style={styles.input}
+            />
+          </View>
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+          <TouchableOpacity 
+            style={[
+              styles.button, 
+              (!usernameValid || isLoading) && styles.disabledButton
+            ]} 
+            onPress={handleNext}
+            disabled={!usernameValid || isLoading}
+          >
+            <Text style={styles.buttonText}>
+              {isLoading ? 'Loading...' : 'Next'}
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Text style={styles.link}>Back</Text>
+          </TouchableOpacity>
+        </Animated.View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 };
@@ -128,9 +195,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
-  content: {
-    flex: 1,
+  scrollContainer: {
+    flexGrow: 1,
     justifyContent: 'center',
+    paddingBottom: 100,
+  },
+  content: {
     alignItems: 'center',
     padding: 20,
   },
@@ -152,11 +222,15 @@ const styles = StyleSheet.create({
   input: {
     backgroundColor: 'white',
     paddingHorizontal: 15,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderRadius: 10,
-    marginTop: 5,
+    marginTop: 10,
     borderWidth: 1,
     borderColor: '#ddd',
+    fontSize: 16,
+  },
+  invalidInput: {
+    borderColor: 'red',
   },
   button: {
     backgroundColor: '#232799',
@@ -166,6 +240,9 @@ const styles = StyleSheet.create({
     marginTop: 10,
     width: '100%',
   },
+  disabledButton: {
+    backgroundColor: '#808080',
+  },
   buttonText: {
     color: 'white',
     fontWeight: '700',
@@ -174,11 +251,13 @@ const styles = StyleSheet.create({
   error: {
     color: 'red',
     marginBottom: 10,
+    textAlign: 'center',
   },
   link: {
     color: '#007AFF',
     marginTop: 15,
     textAlign: 'center',
+    fontSize: 16,
   },
 });
 

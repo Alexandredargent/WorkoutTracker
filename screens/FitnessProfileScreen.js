@@ -4,107 +4,94 @@ import {
   TextInput, 
   Text, 
   StyleSheet, 
-  Alert, 
   TouchableOpacity, 
-  Image,
   KeyboardAvoidingView,
   Platform,
   Animated,
-  Keyboard,
-  ScrollView
+  ScrollView,
+  Keyboard
 } from 'react-native';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../services/firebase';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
-const LoginScreen = ({ navigation, setUser }) => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+const FitnessProfileScreen = () => {
+  const [weight, setWeight] = useState('');
+  const [height, setHeight] = useState('');
+  const [age, setAge] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
+  const navigation = useNavigation();
+  const route = useRoute();
+  const { username, email, password } = route.params;
   const fadeAnim = useState(new Animated.Value(0))[0];
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
-      duration: 1000,
+      duration: 500,
       useNativeDriver: true,
     }).start();
   }, []);
 
-  const handleLogin = async () => {
-    Keyboard.dismiss();
-    setIsLoading(true);
-    setError('');
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      setUser(userCredential.user);
-      navigation.navigate('Main');
-    } catch (error) {
-      setError('Invalid email or password. Please try again.');
-      Alert.alert('Login Error', error.message);
-    } finally {
-      setIsLoading(false);
+  const handleNext = () => {
+    if (!weight || !height || !age) {
+      setError('Please fill in all fields');
+      return;
     }
-  };
-
-  const handleNavigation = (screenName) => {
-    Keyboard.dismiss();
-    navigation.navigate(screenName);
+    setError('');
+    navigation.navigate('GoalScreen', { username, email, password, weight, height, age });
   };
 
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
-    >
+    <KeyboardAvoidingView
+     behavior={Platform.OS === "ios" ? "padding" : undefined}
+     style={styles.container}
+     keyboardVerticalOffset={Platform.select({ ios: 60, android: 0 })}
+     >
       <ScrollView
         contentContainerStyle={styles.scrollContainer}
         keyboardShouldPersistTaps="handled"
+        onScrollBeginDrag={Keyboard.dismiss}
       >
         <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
-          <Image
-            source={{ uri: '/placeholder.svg?height=100&width=100' }}
-            style={styles.logo}
-          />
-          <Text style={styles.title}>Welcome Back</Text>
+          <Text style={styles.title}>Fitness Profile</Text>
           <View style={styles.inputContainer}>
             <TextInput
-              placeholder="Email"
-              value={email}
-              onChangeText={setEmail}
+              placeholder="Weight (kg)"
+              value={weight}
+              onChangeText={text => setWeight(text.replace(/[^0-9.]/g, ''))}
               style={styles.input}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              onSubmitEditing={handleLogin}
+              keyboardType="numeric"
+              maxLength={5}
             />
             <TextInput
-              placeholder="Password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
+              placeholder="Height (cm)"
+              value={height}
+              onChangeText={text => setHeight(text.replace(/[^0-9]/g, ''))}
               style={styles.input}
-              onSubmitEditing={handleLogin}
+              keyboardType="numeric"
+              maxLength={3}
+            />
+            <TextInput
+              placeholder="Age"
+              value={age}
+              onChangeText={text => setAge(text.replace(/[^0-9]/g, ''))}
+              style={styles.input}
+              keyboardType="numeric"
+              maxLength={3}
             />
           </View>
           {error ? <Text style={styles.error}>{error}</Text> : null}
           <TouchableOpacity 
             style={styles.button} 
-            onPress={handleLogin}
+            onPress={handleNext}
             disabled={isLoading}
           >
             <Text style={styles.buttonText}>
-              {isLoading ? 'Logging in...' : 'Log In'}
+              {isLoading ? 'Loading...' : 'Next'}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={() => handleNavigation('SignUp')}
-            style={styles.linkButton}
-          >
-            <Text style={styles.link}>
-              Don't have an account? Sign Up
-            </Text>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Text style={styles.link}>Back</Text>
           </TouchableOpacity>
         </Animated.View>
       </ScrollView>
@@ -120,15 +107,11 @@ const styles = StyleSheet.create({
   scrollContainer: {
     flexGrow: 1,
     justifyContent: 'center',
+    paddingBottom: 100,
   },
   content: {
     alignItems: 'center',
     padding: 20,
-  },
-  logo: {
-    width: 100,
-    height: 100,
-    marginBottom: 20,
   },
   title: {
     fontSize: 24,
@@ -170,12 +153,10 @@ const styles = StyleSheet.create({
   },
   link: {
     color: '#007AFF',
+    marginTop: 15,
     textAlign: 'center',
     fontSize: 16,
   },
-  linkButton: {
-    marginTop: 20,
-  },
 });
 
-export default LoginScreen;
+export default FitnessProfileScreen;
