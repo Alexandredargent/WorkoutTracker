@@ -17,6 +17,9 @@ import { auth } from '../services/firebase';
 const SignUpScreen = ({ navigation, setUser }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [weight, setWeight] = useState('');
+  const [size, setSize] = useState('');
+  const [age, setAge] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -67,12 +70,37 @@ const SignUpScreen = ({ navigation, setUser }) => {
             keyboardType="email-address"
             autoCapitalize="none"
           />
+    
           <TextInput
             placeholder="Password"
             value={password}
             onChangeText={setPassword}
             secureTextEntry
             style={styles.input}
+          />
+
+          <TextInput
+            placeholder="Weight"
+            value={weight}
+            onChangeText={setWeight}
+            style={styles.input}
+            keyboardType="numeric"
+          />
+
+          <TextInput
+            placeholder="Size"
+            value={size}
+            onChangeText={setSize}
+            style={styles.input}
+            keyboardType="numeric"
+          />
+
+          <TextInput
+            placeholder="Age"
+            value={age}
+            onChangeText={setAge}
+            style={styles.input}
+            keyboardType="numeric"
           />
         </View>
         {error ? <Text style={styles.error}>{error}</Text> : null}

@@ -61,3 +61,17 @@ export const addMealToDiary = async (userId, date, meal) => {
     throw error;
   }
 };
+
+export const addWeightToDiary = async (userId, weightEntry) => {
+  try {
+    await addDoc(collection(db, 'diaryEntries'), {
+      userId: userId,
+      date: weightEntry.date,
+      weight: weightEntry.weight,
+      type: 'weight'
+    });
+  } catch (error) {
+    console.error('Error adding weight to diary:', error);
+    throw error;
+  }
+};

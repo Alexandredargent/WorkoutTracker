@@ -4,9 +4,9 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import HomeScreen from '../screens/HomeScreen';
-import AddWorkoutScreen from '../screens/AddWorkoutScreen';
-import AddMealScreen from '../screens/AddMealScreen';
 import DiaryScreen from '../screens/DiaryScreen';
+import AddMealScreen from '../screens/AddMealScreen';
+import StatisticsScreen from '../screens/StatisticsScreen';
 import AccountScreen from '../screens/AccountScreen';
 import { signOut } from 'firebase/auth';
 import { auth } from '../services/firebase';
@@ -109,19 +109,20 @@ const MainNavigator = ({ user, setUser, navigation }) => {
           </TouchableOpacity>
         </View>
       </Animated.View>
-
+      
       <Tab.Navigator
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused, color, size }) => {
             let iconName;
             if (route.name === 'Home') {
               iconName = focused ? 'home' : 'home-outline';
-            } else if (route.name === 'AddWorkout') {
-              iconName = focused ? 'barbell' : 'barbell-outline';
             } else if (route.name === 'AddMeal') {
               iconName = focused ? 'fast-food' : 'fast-food-outline';
             } else if (route.name === 'Diary') {
               iconName = focused ? 'calendar' : 'calendar-outline';
+            }
+            else if (route.name === 'Statistics') {
+              iconName = focused ? 'stats-chart' : 'stats-chart-outline';
             }
 
             return <Ionicons name={iconName} size={size} color={color} />;
@@ -134,10 +135,11 @@ const MainNavigator = ({ user, setUser, navigation }) => {
         })}
       >
         <Tab.Screen name="Home" component={HomeScreen} />
-        <Tab.Screen name="AddWorkout" component={AddWorkoutScreen} options={{ title: 'Workout' }} />
-        <Tab.Screen name="AddMeal" component={AddMealScreen} options={{ title: 'Meal' }} />
         <Tab.Screen name="Diary" component={DiaryScreen} />
+        <Tab.Screen name="AddMeal" component={AddMealScreen} options={{ title: 'Meal' }} />
+        <Tab.Screen name="Statistics" component={StatisticsScreen} />
       </Tab.Navigator>
+
     </SafeAreaView>
   );
 };
