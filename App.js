@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Platform } from 'react-native'; // Add this at the top
+import { Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import MainNavigator from './components/MainNavigator';
@@ -36,14 +36,16 @@ export default function App() {
             >
                 <Stack.Screen 
                     name="Login" 
-                    component={LoginScreen}
                     options={{ headerShown: false }} 
-                />
+                >
+                    {props => <LoginScreen {...props} setUser={setUser} />} 
+                </Stack.Screen>
                 <Stack.Screen 
                     name="SignUp" 
-                    component={SignUpScreen}
                     options={{ headerShown: false }} 
-                />
+                >
+                    {props => <SignUpScreen {...props} setUser={setUser} />}
+                </Stack.Screen>
                 <Stack.Screen 
                     name="FitnessProfileScreen" 
                     component={FitnessProfileScreen} 
