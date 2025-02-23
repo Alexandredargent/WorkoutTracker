@@ -64,7 +64,23 @@ const ExerciseListScreen = ({ navigation, route }) => {
     const user = auth.currentUser;
     if (user) {
       try {
-        await addExerciseToDiary(user.uid, date, exercise);
+        // Ensure the exercise object has all the required fields
+        const formattedExercise = {
+          Name: exercise["Name"] || "",
+          "Difficulty Level": exercise["Difficulty Level"] || "",
+          "Target Muscle Group": exercise["Target Muscle Group"] || "",
+          "Prime Mover Muscle": exercise["Prime Mover Muscle"] || "",
+          "Secondary Muscle": exercise["Secondary Muscle"] || "",
+          "Tertiary Muscle": exercise["Tertiary Muscle"] || "",
+          "Primary Equipment": exercise["Primary Equipment"] || "",
+          Posture: exercise["Posture"] || "",
+          Grip: exercise["Grip"] || "",
+          "Movement Pattern #1": exercise["Movement Pattern #1"] || "",
+          "Body Region": exercise["Body Region"] || "",
+          "Primary Exercise Classification": exercise["Primary Exercise Classification"] || ""
+        };
+  
+        await addExerciseToDiary(user.uid, date, formattedExercise);
         console.log('Exercise added successfully');
         navigation.goBack();
       } catch (error) {
