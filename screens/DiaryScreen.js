@@ -151,18 +151,26 @@ const DiaryScreen = ({ navigation, route }) => {
       Alert.alert('Input Error', 'Please enter both reps and weight.');
       return;
     }
-
+  
     const set = {
       reps: parseInt(reps),
       weight: parseFloat(weight),
       timestamp: new Date().toISOString(),
     };
-
+  
     try {
       await addSetToExercise(entryId, set);
       setReps('');
       setWeight('');
-      setRefreshTrigger(prev => prev + 1);
+  
+      // Update the specific entry in the entries state
+      setEntries((prevEntries) =>
+        prevEntries.map((entry) =>
+          entry.id === entryId
+            ? { ...entry, sets: [...entry.sets, set] }
+            : entry
+        )
+      );
     } catch (error) {
       console.error('Error adding set:', error);
       Alert.alert('Error', 'Failed to add set. Please try again.');
@@ -186,19 +194,28 @@ const DiaryScreen = ({ navigation, route }) => {
       Alert.alert('Input Error', 'Please enter your weight.');
       return;
     }
-
+  
     const weightEntry = {
       weight: parseFloat(weightInput),
       date: format(selectedDate, 'yyyy-MM-dd'),
     };
-
+  
     try {
       const existingWeight = entries.find(entry => entry.weight !== undefined);
       if (existingWeight) {
         await updateWeightInDiary(auth.currentUser.uid, existingWeight.id, weightEntry);
+        // Update the specific entry in the entries state
+        setEntries((prevEntries) =>
+          prevEntries.map((entry) =>
+            entry.id === existingWeight.id
+              ? { ...entry, weight: weightEntry.weight }
+              : entry
+          )
+        );
       } else {
-        await addWeightToDiary(auth.currentUser.uid, weightEntry);
-        
+        const newWeightEntry = await addWeightToDiary(auth.currentUser.uid, weightEntry);
+        // Add the new weight entry to the entries state
+        setEntries((prevEntries) => [...prevEntries, { ...weightEntry, id: newWeightEntry.id }]);
       }
       setRefreshTrigger(prev => prev + 1);
       setIsWeightModalVisible(false);
@@ -233,11 +250,18 @@ const DiaryScreen = ({ navigation, route }) => {
           <Text style={styles.smallButtonText}>Add Set</Text>
         </TouchableOpacity>
       </View>
+      <View style={styles.setsHeader}>
+        <Text style={styles.setsHeaderText}>Set</Text>
+        <Text style={styles.setsHeaderText}>Reps</Text>
+        <Text style={styles.setsHeaderText}>Weight (kg)</Text>
+      </View>
       {item.sets &&
         item.sets.map((set, index) => (
-          <Text key={index} style={styles.setText}>
-            {set.reps} reps @ {set.weight} kg
-          </Text>
+          <View key={index} style={styles.setRow}>
+            <Text style={styles.setText}>{index + 1}</Text>
+            <Text style={styles.setText}>{set.reps}</Text>
+            <Text style={styles.setText}>{set.weight}</Text>
+          </View>
         ))
       }
     </View>
@@ -649,6 +673,33 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginHorizontal: 5,
     alignItems: 'center',
+  },
+  setsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  setsHeaderText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: 'center',
+  },
+  setRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  setText: {
+    flex: 1,
+    fontSize: 16,
+    color: '#555',
+    textAlign: 'center',
   },
   cancelButton: { backgroundColor: '#ccc' },
   submitButton: { backgroundColor: '#232799' },
