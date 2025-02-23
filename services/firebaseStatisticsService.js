@@ -36,3 +36,13 @@ export const fetchStatistics = async (userId) => {
     throw error;
   }
 };
+
+export const fetchWeightHistory = async (userId) => {
+  const weightEntries = [];
+  const q = query(collection(db, 'diaryEntries'), where('userId', '==', userId), where('type', '==', 'weight'));
+  const querySnapshot = await getDocs(q);
+  querySnapshot.forEach((doc) => {
+    weightEntries.push({ date: doc.data().date, weight: doc.data().weight });
+  });
+  return weightEntries.sort((a, b) => new Date(a.date) - new Date(b.date));
+};

@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import Collapsible from 'react-native-collapsible';
 import { format, addDays, subDays } from 'date-fns';
-import DateTimePickerModal from "react-native-modal-datetime-picker";
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import {
   fetchDiaryEntriesForDate,
   addExerciseToDiary,
@@ -23,7 +23,6 @@ import {
 } from '../services/diaryService.js';
 import { auth } from '../services/firebase.js';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
 import { Animated, PanResponder, Dimensions } from 'react-native';
 
 const { width } = Dimensions.get('window');
@@ -34,12 +33,13 @@ const DiaryScreen = ({ navigation, route }) => {
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [entries, setEntries] = useState([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start as false, controlled by animation
   const [reps, setReps] = useState('');
   const [weight, setWeight] = useState('');
   const [weightInput, setWeightInput] = useState('');
   const [isWeightModalVisible, setIsWeightModalVisible] = useState(false);
   const [activeSections, setActiveSections] = useState([]);
+  const [shouldFetch, setShouldFetch] = useState(true); // New state to sync fetching with animation
 
   const pan = useRef(new Animated.ValueXY()).current;
   const opacity = useRef(new Animated.Value(1)).current;
@@ -68,41 +68,18 @@ const DiaryScreen = ({ navigation, route }) => {
 
   const animatePageChange = (newDate, toValue) => {
     Animated.parallel([
-      Animated.timing(pan.x, { toValue: toValue, duration: 300, useNativeDriver: false }),
-      Animated.timing(opacity, { toValue: 0, duration: 300, useNativeDriver: false }),
+      Animated.timing(pan.x, { toValue: toValue, duration: 400, useNativeDriver: false }),
+      Animated.timing(opacity, { toValue: 0, duration: 400, useNativeDriver: false }),
     ]).start(() => {
       handleDateChange(newDate);
+      setShouldFetch(true); // Trigger fetch after fade-out
       pan.setValue({ x: -toValue, y: 0 });
       Animated.parallel([
         Animated.spring(pan.x, { toValue: 0, useNativeDriver: false, friction: 8 }),
-        Animated.timing(opacity, { toValue: 1, duration: 300, useNativeDriver: false }),
+        Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: false }),
       ]).start();
     });
   };
-
-  useFocusEffect(
-    React.useCallback(() => {
-      const fetchEntries = async () => {
-        setLoading(true);
-        const user = auth.currentUser;
-        if (user) {
-          try {
-            const fetchedEntries = await fetchDiaryEntriesForDate(
-              user.uid,
-              format(selectedDate, 'yyyy-MM-dd')
-            );
-            setEntries(fetchedEntries);
-          } catch (error) {
-            console.error('Error fetching diary entries:', error);
-          }
-        } else {
-          console.log('No user is signed in.');
-        }
-        setLoading(false);
-      };
-      fetchEntries();
-    }, [selectedDate])
-  );
 
   useEffect(() => {
     const fetchEntries = async () => {
@@ -124,19 +101,46 @@ const DiaryScreen = ({ navigation, route }) => {
       setLoading(false);
     };
     fetchEntries();
-  }, [selectedDate, refreshTrigger]);
+  }, [selectedDate]); // Removed refreshTrigger and shouldFetch
 
   useEffect(() => {
     if (route.params?.exercise) {
       const { exercise, date } = route.params;
-      addExerciseToDiary(auth.currentUser.uid, date, exercise)
-        .then(() => setRefreshTrigger(prev => prev + 1))
-        .catch(error => console.error('Error adding exercise to diary:', error));
+      const addAndRefresh = async () => {
+        try {
+          // Add the exercise to the diary
+          await addExerciseToDiary(auth.currentUser.uid, date, exercise);
+          
+          // Immediately fetch updated entries
+          setLoading(true);
+          const user = auth.currentUser;
+          if (user) {
+            const fetchedEntries = await fetchDiaryEntriesForDate(
+              user.uid,
+              format(selectedDate, 'yyyy-MM-dd')
+            );
+            setEntries(fetchedEntries); // Update entries directly
+          }
+          setLoading(false);
+          
+          // Optional: Expand the exercises section
+          setActiveSections(['exercise']);
+          
+          // Clear route params to prevent re-triggering
+          navigation.setParams({ exercise: null });
+        } catch (error) {
+          console.error('Error adding exercise and refreshing:', error);
+          setLoading(false);
+        }
+      };
+      
+      addAndRefresh();
     }
-  }, [route.params?.exercise]);
+  }, [route.params?.exercise, navigation, selectedDate]);
 
   const handleDateChange = (date) => {
     setSelectedDate(date);
+    setActiveSections([]); // Reset collapsible sections to collapsed state
   };
 
   const showDatePicker = () => setDatePickerVisibility(true);
@@ -162,12 +166,10 @@ const DiaryScreen = ({ navigation, route }) => {
       await addSetToExercise(entryId, set);
       setReps('');
       setWeight('');
-  
-      // Update the specific entry in the entries state
       setEntries((prevEntries) =>
         prevEntries.map((entry) =>
           entry.id === entryId
-            ? { ...entry, sets: [...entry.sets, set] }
+            ? { ...entry, sets: entry.sets ? [...entry.sets, set] : [set] }
             : entry
         )
       );
@@ -177,7 +179,6 @@ const DiaryScreen = ({ navigation, route }) => {
     }
   };
 
-  // Open weight modal and prefill if a weight entry already exists
   const handleOpenWeightModal = () => {
     const existingWeight = entries.find(entry => entry.weight !== undefined);
     if (existingWeight) {
@@ -188,36 +189,31 @@ const DiaryScreen = ({ navigation, route }) => {
     setIsWeightModalVisible(true);
   };
 
-  // Submit handler: update if exists, otherwise add a new weight entry.
   const handleSubmitWeight = async () => {
     if (!weightInput) {
       Alert.alert('Input Error', 'Please enter your weight.');
       return;
     }
-  
+
     const weightEntry = {
       weight: parseFloat(weightInput),
       date: format(selectedDate, 'yyyy-MM-dd'),
     };
-  
+
     try {
       const existingWeight = entries.find(entry => entry.weight !== undefined);
       if (existingWeight) {
         await updateWeightInDiary(auth.currentUser.uid, existingWeight.id, weightEntry);
-        // Update the specific entry in the entries state
         setEntries((prevEntries) =>
           prevEntries.map((entry) =>
-            entry.id === existingWeight.id
-              ? { ...entry, weight: weightEntry.weight }
-              : entry
+            entry.id === existingWeight.id ? { ...entry, weight: weightEntry.weight } : entry
           )
         );
       } else {
         const newWeightEntry = await addWeightToDiary(auth.currentUser.uid, weightEntry);
-        // Add the new weight entry to the entries state
         setEntries((prevEntries) => [...prevEntries, { ...weightEntry, id: newWeightEntry.id }]);
       }
-      setRefreshTrigger(prev => prev + 1);
+      setRefreshTrigger(prev => prev + 1); // Trigger re-fetch
       setIsWeightModalVisible(false);
     } catch (error) {
       console.error('Error processing weight entry:', error);
@@ -262,8 +258,7 @@ const DiaryScreen = ({ navigation, route }) => {
             <Text style={styles.setText}>{set.reps}</Text>
             <Text style={styles.setText}>{set.weight}</Text>
           </View>
-        ))
-      }
+        ))}
     </View>
   );
 
@@ -286,7 +281,7 @@ const DiaryScreen = ({ navigation, route }) => {
           onPress={handleOpenWeightModal}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-     
+          
         </TouchableOpacity>
       </View>
     </View>
@@ -300,7 +295,6 @@ const DiaryScreen = ({ navigation, route }) => {
     );
   };
 
-  // Calculate if there's a weight entry for today.
   const weightEntry = entries.find(entry => entry.weight !== undefined);
 
   return (
@@ -334,8 +328,12 @@ const DiaryScreen = ({ navigation, route }) => {
               <>
                 {/* Exercises Section Header */}
                 <View style={styles.sectionHeader}>
-                  <TouchableOpacity style={styles.headerToggle} onPress={() => toggleSection('exercise')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                    <Ionicons name="barbell-outline" size={32} color="#232799" style={{ marginRight: 8 }} />
+                  <TouchableOpacity
+                    style={styles.headerToggle}
+                    onPress={() => toggleSection('exercise')}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Ionicons name="barbell" size={32} color="#232799" style={{ marginRight: 8 }} />
                     <Text style={styles.sectionTitle}>Exercises</Text>
                     <Ionicons
                       name={activeSections.includes('exercise') ? 'chevron-up' : 'chevron-down'}
@@ -345,7 +343,9 @@ const DiaryScreen = ({ navigation, route }) => {
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.headerAddButton}
-                    onPress={() => navigation.navigate('ExerciseListScreen', { date: format(selectedDate, 'yyyy-MM-dd') })}
+                    onPress={() =>
+                      navigation.navigate('ExerciseListScreen', { date: format(selectedDate, 'yyyy-MM-dd') })
+                    }
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
                     <Ionicons name="add-circle" size={28} color="#232799" />
@@ -367,8 +367,12 @@ const DiaryScreen = ({ navigation, route }) => {
 
                 {/* Meals Section Header */}
                 <View style={styles.sectionHeader}>
-                  <TouchableOpacity style={styles.headerToggle} onPress={() => toggleSection('meal')} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-                    <Ionicons name="restaurant-outline" size={32} color="#232799" style={{ marginRight: 8 }} />
+                  <TouchableOpacity
+                    style={styles.headerToggle}
+                    onPress={() => toggleSection('meal')}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  >
+                    <Ionicons name="restaurant" size={32} color="#232799" style={{ marginRight: 8 }} />
                     <Text style={styles.sectionTitle}>Meals</Text>
                     <Ionicons
                       name={activeSections.includes('meal') ? 'chevron-up' : 'chevron-down'}
@@ -378,7 +382,9 @@ const DiaryScreen = ({ navigation, route }) => {
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.headerAddButton}
-                    onPress={() => navigation.navigate('MealListScreen', { date: format(selectedDate, 'yyyy-MM-dd') })}
+                    onPress={() =>
+                      navigation.navigate('MealListScreen', { date: format(selectedDate, 'yyyy-MM-dd') })
+                    }
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
                     <Ionicons name="add-circle" size={28} color="#232799" />
@@ -400,14 +406,14 @@ const DiaryScreen = ({ navigation, route }) => {
 
                 {/* Weight Section - No collapse */}
                 <View style={styles.sectionHeader}>
-                  <Ionicons name="scale-outline" size={32} color="#232799" style={{ marginRight: 8 }} />
+                  <Ionicons name="scale" size={32} color="#232799" style={{ marginRight: 8 }} />
                   <Text style={styles.sectionTitle}>Weight</Text>
                   <TouchableOpacity
                     style={styles.headerAddButton}
                     onPress={handleOpenWeightModal}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
-                    { weightEntry ? (
+                    {weightEntry ? (
                       <Ionicons name="pencil" size={28} color="#232799" />
                     ) : (
                       <Ionicons name="add-circle" size={28} color="#232799" />
@@ -429,7 +435,12 @@ const DiaryScreen = ({ navigation, route }) => {
         </Animated.View>
 
         {/* Date Picker */}
-        <DateTimePickerModal isVisible={isDatePickerVisible} mode="date" onConfirm={handleConfirm} onCancel={hideDatePicker} />
+        <DateTimePickerModal
+          isVisible={isDatePickerVisible}
+          mode="date"
+          onConfirm={handleConfirm}
+          onCancel={hideDatePicker}
+        />
 
         {/* Weight Input Modal */}
         <Modal
@@ -449,10 +460,16 @@ const DiaryScreen = ({ navigation, route }) => {
                 keyboardType="numeric"
               />
               <View style={styles.modalButtons}>
-                <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={() => setIsWeightModalVisible(false)}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => setIsWeightModalVisible(false)}
+                >
                   <Text style={styles.modalButtonText}>Cancel</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.modalButton, styles.submitButton]} onPress={handleSubmitWeight}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.submitButton]}
+                  onPress={handleSubmitWeight}
+                >
                   <Text style={styles.modalButtonText}>Submit</Text>
                 </TouchableOpacity>
               </View>
@@ -463,6 +480,7 @@ const DiaryScreen = ({ navigation, route }) => {
     </SafeAreaView>
   );
 };
+
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -479,6 +497,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     backgroundColor: '#fff',
+    // Removed shadow props for consistency, but kept for header as it's static
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -501,21 +520,25 @@ const styles = StyleSheet.create({
   calendarIcon: { marginLeft: 4 },
   animatedContainer: {
     flex: 1,
+    overflow: 'hidden', // Still useful for animation clipping
   },
   entriesContainer: {
-    margin: 16,
+    flex: 1,
+    marginHorizontal: 16,
+    marginVertical: 8,
     borderRadius: 12,
     backgroundColor: '#fff',
-    flex: 1,
+    // Shadows removed
   },
   entriesContent: {
     paddingVertical: 8,
+    paddingBottom: 20,
   },
   centerContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    minHeight: 200,
   },
   emptyMessage: {
     fontSize: 16,
@@ -532,33 +555,24 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginTop: 16,
     borderRadius: 8,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 2,
-    position: 'relative',
+    position: 'relative', // Ensure the add button is positioned correctly
   },
   headerToggle: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center', // Center the toggle content
-    flex: 1, 
+    flex: 1, // Ensure the toggle takes up available space
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#232799',
-    marginRight: 8,
-    textAlign: 'center', 
+    textAlign: 'center', // Center the text
   },
   headerAddButton: {
     backgroundColor: '#fff',
     borderRadius: 20,
     padding: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 2,
     position: 'absolute', // Position the add button absolutely
     right: 16, // Align it to the right
   },
@@ -568,10 +582,7 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     padding: 16,
     borderRadius: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 2,
+    // Shadows removed
   },
   cardRow: {
     flexDirection: 'row',
@@ -583,6 +594,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     marginLeft: 12,
+    flex: 1,
   },
   subText: {
     fontSize: 14,
@@ -593,6 +605,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 12,
+    flexWrap: 'wrap',
   },
   input: {
     flex: 1,
@@ -603,6 +616,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
     fontSize: 16,
     color: '#333',
+    minWidth: 80,
   },
   smallButton: {
     backgroundColor: '#232799',
@@ -614,10 +628,32 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
+  setsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  setsHeaderText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: 'center',
+  },
+  setRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
   setText: {
+    flex: 1,
     fontSize: 16,
     color: '#555',
-    marginTop: 8,
+    textAlign: 'center',
   },
   updateButton: {
     padding: 4,
@@ -644,7 +680,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 20,
     alignItems: 'center',
-    elevation: 5,
+    elevation: 5, // Kept for modal as it’s static
   },
   modalTitle: {
     fontSize: 20,
@@ -674,36 +710,16 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
     alignItems: 'center',
   },
-  setsHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
+  cancelButton: {
+    backgroundColor: '#ccc',
   },
-  setsHeaderText: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    textAlign: 'center',
+  submitButton: {
+    backgroundColor: '#232799',
   },
-  setRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+  modalButtonText: {
+    color: '#FFF',
+    fontWeight: 'bold',
   },
-  setText: {
-    flex: 1,
-    fontSize: 16,
-    color: '#555',
-    textAlign: 'center',
-  },
-  cancelButton: { backgroundColor: '#ccc' },
-  submitButton: { backgroundColor: '#232799' },
-  modalButtonText: { color: '#FFF', fontWeight: 'bold' },
 });
 
 export default DiaryScreen;
