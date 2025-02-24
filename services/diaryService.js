@@ -6,7 +6,9 @@ import {
   getDocs, 
   updateDoc, 
   arrayUnion, 
-  doc 
+  arrayRemove, 
+  doc, 
+  deleteDoc 
 } from 'firebase/firestore';
 import { db } from './firebase';
 
@@ -53,6 +55,46 @@ export const addSetToExercise = async (entryId, set) => {
     });
   } catch (error) {
     console.error('Error adding set to exercise:', error);
+    throw error;
+  }
+};
+
+// Delete a set from an existing exercise entry
+export const deleteSetFromExercise = async (entryId, set) => {
+  try {
+    const entryRef = doc(db, 'diaryEntries', entryId);
+    await updateDoc(entryRef, {
+      sets: arrayRemove(set)
+    });
+  } catch (error) {
+    console.error('Error deleting set from exercise:', error);
+    throw error;
+  }
+};
+
+// Update a set in an existing exercise entry
+export const updateSetInExercise = async (entryId, oldSet, newSet) => {
+  try {
+    const entryRef = doc(db, 'diaryEntries', entryId);
+    await updateDoc(entryRef, {
+      sets: arrayRemove(oldSet)
+    });
+    await updateDoc(entryRef, {
+      sets: arrayUnion(newSet)
+    });
+  } catch (error) {
+    console.error('Error updating set in exercise:', error);
+    throw error;
+  }
+};
+
+// Delete an exercise entry
+export const deleteExerciseFromDiary = async (entryId) => {
+  try {
+    const entryRef = doc(db, 'diaryEntries', entryId);
+    await deleteDoc(entryRef);
+  } catch (error) {
+    console.error('Error deleting exercise from diary:', error);
     throw error;
   }
 };

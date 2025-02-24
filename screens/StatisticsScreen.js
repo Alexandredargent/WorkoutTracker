@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, Dimensions, ActivityIndicator } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { useFocusEffect } from '@react-navigation/native';
@@ -21,22 +21,21 @@ const StatisticsScreen = () => {
         setMostFrequentExercises(stats.mostFrequentExercises);
 
         const weightData = await fetchWeightHistory(user.uid);
-
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        // Filter future dates and sort chronologically
+        // Filter out future dates and sort chronologically
         const formattedWeightData = weightData
           .filter(entry => {
             const entryDate = new Date(entry.date);
-            entryDate.setHours(0, 0, 0, 0); // Normalize to midnight
-            return entryDate <= today; // Include dates up to today
+            entryDate.setHours(0, 0, 0, 0);
+            return entryDate <= today;
           })
           .map(entry => ({
-            date: new Date(entry.date).toISOString().split('T')[0], // Format date as string (YYYY-MM-DD)
-            weight: Number(entry.weight), // Ensure weight is a number
+            date: new Date(entry.date).toISOString().split('T')[0],
+            weight: Number(entry.weight),
           }))
-          .sort((a, b) => new Date(a.date) - new Date(b.date)); // Sort ascending by date
+          .sort((a, b) => new Date(a.date) - new Date(b.date));
 
         setWeightHistory(formattedWeightData);
       } catch (error) {
@@ -62,8 +61,35 @@ const StatisticsScreen = () => {
     );
   }
 
-  const weightDates = weightHistory.map(entry => entry.date);
-  const weightValues = weightHistory.map(entry => entry.weight);
+  // Prepare monthly data for the past 6 months (including the current month)
+  const currentDate = new Date();
+  const monthlyLabels = [];
+  const monthlyData = [];
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  let lastValue = null;
+
+  // Loop through the past 6 months (oldest to most recent)
+  for (let i = 0; i < 6; i++) {
+    // Calculate the date for each month starting 5 months ago until the current month
+    const d = new Date(currentDate.getFullYear(), currentDate.getMonth() - (5 - i), 1);
+    const monthLabel = months[d.getMonth()];
+    monthlyLabels.push(monthLabel);
+
+    // Filter weightHistory entries for the same month and year
+    const weightsForMonth = weightHistory.filter(entry => {
+      const entryDate = new Date(entry.date);
+      return entryDate.getFullYear() === d.getFullYear() && entryDate.getMonth() === d.getMonth();
+    }).map(entry => entry.weight);
+
+    if (weightsForMonth.length > 0) {
+      const value = weightsForMonth[weightsForMonth.length - 1];
+      monthlyData.push(value);
+      lastValue = value;
+    } else {
+      // Use the last known value or default to 0 if no previous data exists
+      monthlyData.push(lastValue !== null ? lastValue : 0);
+    }
+  }
 
   return (
     <ScrollView style={styles.container}>
@@ -78,51 +104,43 @@ const StatisticsScreen = () => {
         <Text style={styles.sectionTitle}>Most Frequent Exercises</Text>
         {mostFrequentExercises.map((exercise, index) => (
           <Text key={index} style={styles.exercise}>
-            {exercise.name}: {exercise.count} times
+            {exercise.Name}: {exercise.count} times
           </Text>
         ))}
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Weight Evolution</Text>
+        <Text style={styles.sectionTitle}>Weight Evolution (Past 6 Months)</Text>
         {weightHistory.length > 0 ? (
-          <ScrollView horizontal>
-            <LineChart
-              data={{
-                labels: weightDates,
-                datasets: [
-                  {
-                    data: weightValues,
-                  },
-                ],
-              }}
-              width={Math.max(Dimensions.get('window').width, weightDates.length * 50)} // Adjust width based on data length
-              height={220}
-              yAxisLabel=""
-              yAxisSuffix="kg"
-              chartConfig={{
-                backgroundColor: '#e26a00',
-                backgroundGradientFrom: '#fb8c00',
-                backgroundGradientTo: '#ffa726',
-                decimalPlaces: 2, // optional, defaults to 2dp
-                color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
-                style: {
-                  borderRadius: 16,
+          <LineChart
+            data={{
+              labels: monthlyLabels,
+              datasets: [
+                {
+                  data: monthlyData,
                 },
-                propsForDots: {
-                  r: '6',
-                  strokeWidth: '2',
-                  stroke: '#ffa726',
-                },
-              }}
-              bezier
-              style={{
-                marginVertical: 8,
-                borderRadius: 16,
-              }}
-            />
-          </ScrollView>
+              ],
+            }}
+            width={Dimensions.get('window').width - 40} // Adjust for container padding
+            height={220}
+            yAxisSuffix="kg"
+            chartConfig={{
+              backgroundColor: '#e26a00',
+              backgroundGradientFrom: '#fb8c00',
+              backgroundGradientTo: '#ffa726',
+              decimalPlaces: 2,
+              color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+              labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
+              style: { borderRadius: 16 },
+              propsForDots: {
+                r: '6',
+                strokeWidth: '2',
+                stroke: '#ffa726',
+              },
+            }}
+            bezier
+            style={{ marginVertical: 8, borderRadius: 16 }}
+          />
         ) : (
           <Text>No weight history available</Text>
         )}

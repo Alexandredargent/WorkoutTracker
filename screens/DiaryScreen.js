@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -18,12 +18,16 @@ import {
   fetchDiaryEntriesForDate,
   addExerciseToDiary,
   addSetToExercise,
+  deleteSetFromExercise,
+  updateSetInExercise,
+  deleteExerciseFromDiary,
   addWeightToDiary,
   updateWeightInDiary,
 } from '../services/diaryService.js';
 import { auth } from '../services/firebase.js';
 import { Ionicons } from '@expo/vector-icons';
 import { Animated, PanResponder, Dimensions } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
 
@@ -40,6 +44,9 @@ const DiaryScreen = ({ navigation, route }) => {
   const [isWeightModalVisible, setIsWeightModalVisible] = useState(false);
   const [activeSections, setActiveSections] = useState([]);
   const [shouldFetch, setShouldFetch] = useState(true); // New state to sync fetching with animation
+  const [isEditSetModalVisible, setIsEditSetModalVisible] = useState(false);
+  const [currentSet, setCurrentSet] = useState(null);
+  const [currentEntryId, setCurrentEntryId] = useState(null);
 
   const pan = useRef(new Animated.ValueXY()).current;
   const opacity = useRef(new Animated.Value(1)).current;
@@ -81,27 +88,29 @@ const DiaryScreen = ({ navigation, route }) => {
     });
   };
 
-  useEffect(() => {
-    const fetchEntries = async () => {
-      setLoading(true);
-      const user = auth.currentUser;
-      if (user) {
-        try {
-          const fetchedEntries = await fetchDiaryEntriesForDate(
-            user.uid,
-            format(selectedDate, 'yyyy-MM-dd')
-          );
-          setEntries(fetchedEntries);
-        } catch (error) {
-          console.error('Error fetching diary entries:', error);
+  useFocusEffect(
+    useCallback(() => {
+      const refreshEntries = async () => {
+        setLoading(true);
+        const user = auth.currentUser;
+        if (user) {
+          try {
+            const fetchedEntries = await fetchDiaryEntriesForDate(
+              user.uid,
+              format(selectedDate, 'yyyy-MM-dd')
+            );
+            setEntries(fetchedEntries);
+          } catch (error) {
+            console.error('Error fetching diary entries:', error);
+          }
+        } else {
+          console.log('No user is signed in.');
         }
-      } else {
-        console.log('No user is signed in.');
-      }
-      setLoading(false);
-    };
-    fetchEntries();
-  }, [selectedDate]); // Removed refreshTrigger and shouldFetch
+        setLoading(false);
+      };
+      refreshEntries();
+    }, [selectedDate])
+  );
 
   useEffect(() => {
     if (route.params?.exercise) {
@@ -111,7 +120,7 @@ const DiaryScreen = ({ navigation, route }) => {
           // Add the exercise to the diary
           await addExerciseToDiary(auth.currentUser.uid, date, exercise);
           
-          // Immediately fetch updated entries
+          // Immediately fetch updated diary entries for the selected date
           setLoading(true);
           const user = auth.currentUser;
           if (user) {
@@ -119,14 +128,14 @@ const DiaryScreen = ({ navigation, route }) => {
               user.uid,
               format(selectedDate, 'yyyy-MM-dd')
             );
-            setEntries(fetchedEntries); // Update entries directly
+            setEntries(fetchedEntries); // Refresh the exercise list
           }
           setLoading(false);
           
           // Optional: Expand the exercises section
           setActiveSections(['exercise']);
           
-          // Clear route params to prevent re-triggering
+          // Clear the route param to prevent unintended re-triggering
           navigation.setParams({ exercise: null });
         } catch (error) {
           console.error('Error adding exercise and refreshing:', error);
@@ -179,6 +188,48 @@ const DiaryScreen = ({ navigation, route }) => {
     }
   };
 
+  const handleDeleteSet = async (entryId, set) => {
+    try {
+      await deleteSetFromExercise(entryId, set);
+      setEntries((prevEntries) =>
+        prevEntries.map((entry) =>
+          entry.id === entryId
+            ? { ...entry, sets: entry.sets.filter(s => s.timestamp !== set.timestamp) }
+            : entry
+        )
+      );
+    } catch (error) {
+      console.error('Error deleting set:', error);
+      Alert.alert('Error', 'Failed to delete set. Please try again.');
+    }
+  };
+
+  const handleUpdateSet = async (entryId, oldSet, newSet) => {
+    try {
+      await updateSetInExercise(entryId, oldSet, newSet);
+      setEntries((prevEntries) =>
+        prevEntries.map((entry) =>
+          entry.id === entryId
+            ? { ...entry, sets: entry.sets.map(s => s.timestamp === oldSet.timestamp ? newSet : s) }
+            : entry
+        )
+      );
+    } catch (error) {
+      console.error('Error updating set:', error);
+      Alert.alert('Error', 'Failed to update set. Please try again.');
+    }
+  };
+
+  const handleDeleteExercise = async (entryId) => {
+    try {
+      await deleteExerciseFromDiary(entryId);
+      setEntries((prevEntries) => prevEntries.filter(entry => entry.id !== entryId));
+    } catch (error) {
+      console.error('Error deleting exercise:', error);
+      Alert.alert('Error', 'Failed to delete exercise. Please try again.');
+    }
+  };
+
   const handleOpenWeightModal = () => {
     const existingWeight = entries.find(entry => entry.weight !== undefined);
     if (existingWeight) {
@@ -221,11 +272,47 @@ const DiaryScreen = ({ navigation, route }) => {
     }
   };
 
+  const handleEditSet = (entryId, set) => {
+    setCurrentSet(set);
+    setCurrentEntryId(entryId);
+    setReps(set.reps.toString());
+    setWeight(set.weight.toString());
+    setIsEditSetModalVisible(true);
+  };
+
+  const handleSaveSet = async () => {
+    if (!reps || !weight) {
+      Alert.alert('Input Error', 'Please enter both reps and weight.');
+      return;
+    }
+
+    const newSet = {
+      ...currentSet,
+      reps: parseInt(reps),
+      weight: parseFloat(weight),
+    };
+
+    try {
+      await handleUpdateSet(currentEntryId, currentSet, newSet);
+      setIsEditSetModalVisible(false);
+      setCurrentSet(null);
+      setCurrentEntryId(null);
+      setReps('');
+      setWeight('');
+    } catch (error) {
+      console.error('Error saving set:', error);
+      Alert.alert('Error', 'Failed to save set. Please try again.');
+    }
+  };
+
   const renderExerciseItem = ({ item }) => (
     <View style={styles.card}>
       <View style={styles.cardRow}>
         <Ionicons name="barbell-outline" size={24} color="#232799" />
         <Text style={styles.cardTitle}>{item.exercise.Name}</Text>
+        <TouchableOpacity onPress={() => handleDeleteExercise(item.id)}>
+          <Ionicons name="trash-outline" size={24} color="red" />
+        </TouchableOpacity>
       </View>
       <View style={styles.setInputContainer}>
         <TextInput
@@ -250,6 +337,7 @@ const DiaryScreen = ({ navigation, route }) => {
         <Text style={styles.setsHeaderText}>Set</Text>
         <Text style={styles.setsHeaderText}>Reps</Text>
         <Text style={styles.setsHeaderText}>Weight (kg)</Text>
+        <View style={{ width: 48 }} /> 
       </View>
       {item.sets &&
         item.sets.map((set, index) => (
@@ -257,6 +345,12 @@ const DiaryScreen = ({ navigation, route }) => {
             <Text style={styles.setText}>{index + 1}</Text>
             <Text style={styles.setText}>{set.reps}</Text>
             <Text style={styles.setText}>{set.weight}</Text>
+            <TouchableOpacity onPress={() => handleDeleteSet(item.id, set)}>
+              <Ionicons name="trash-outline" size={24} color="red" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => handleEditSet(item.id, set)}>
+              <Ionicons name="pencil-outline" size={24} color="blue" />
+            </TouchableOpacity>
           </View>
         ))}
     </View>
@@ -281,7 +375,7 @@ const DiaryScreen = ({ navigation, route }) => {
           onPress={handleOpenWeightModal}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         >
-          
+          <Ionicons name="pencil-outline" size={24} color="blue" />
         </TouchableOpacity>
       </View>
     </View>
@@ -476,6 +570,50 @@ const DiaryScreen = ({ navigation, route }) => {
             </View>
           </View>
         </Modal>
+
+        {/* Edit Set Modal */}
+        <Modal
+          animationType="fade"
+          transparent={true}
+          visible={isEditSetModalVisible}
+          onRequestClose={() => setIsEditSetModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <Text style={styles.modalTitle}>Edit Set</Text>
+              <Text style={styles.modalLabel}>Reps</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Reps"
+                value={reps}
+                onChangeText={setReps}
+                keyboardType="numeric"
+              />
+              <Text style={styles.modalLabel}>Weight</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Weight"
+                value={weight}
+                onChangeText={setWeight}
+                keyboardType="numeric"
+              />
+              <View style={styles.modalButtons}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => setIsEditSetModalVisible(false)}
+                >
+                  <Text style={styles.modalButtonText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.submitButton]}
+                  onPress={handleSaveSet}
+                >
+                  <Text style={styles.modalButtonText}>Save</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
       </View>
     </SafeAreaView>
   );
@@ -645,6 +783,7 @@ const styles = StyleSheet.create({
   setRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center', // Ensure items are centered vertically
     paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
@@ -681,6 +820,12 @@ const styles = StyleSheet.create({
     padding: 20,
     alignItems: 'center',
     elevation: 5, // Kept for modal as it’s static
+  },
+  modalLabel: {
+    alignSelf: 'flex-start',
+    marginBottom: 5,
+    fontSize: 16,
+    color: '#333',
   },
   modalTitle: {
     fontSize: 20,

@@ -127,7 +127,7 @@ const MainNavigator = ({ user, setUser, navigation }) => {
 
             return <Ionicons name={iconName} size={size} color={color} />;
           },
-          tabBarActiveTintColor: '#232799',
+          tabBarActiveTintColor: '#232799',//Navigation icons color   #007e83
           tabBarInactiveTintColor: 'gray',
           tabBarStyle: styles.tabBar,
           tabBarLabelStyle: styles.tabBarLabel,
