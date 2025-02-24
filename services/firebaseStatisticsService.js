@@ -3,29 +3,33 @@ import { db } from './firebase';
 
 export const fetchStatistics = async (userId) => {
   try {
-    const q = query(collection(db, 'diaryEntries'), where('userId', '==', userId));
+    const q = query(collection(db, 'diaryEntries'), where('userId', '==', userId), where('type', '==', 'exercise'));
     const snapshot = await getDocs(q);
     const entries = snapshot.docs.map(doc => doc.data());
 
-    // Calculate total workouts
+    console.log('User ID being queried:', userId);
+    console.log('Number of documents found:', snapshot.docs.length);
+    console.log('Raw entries:', entries);
+
     const totalWorkouts = entries.length;
 
-    // Calculate most frequent exercises
     const exerciseCounts = {};
     entries.forEach(entry => {
-      if (entry.exerciseName) {
-        if (!exerciseCounts[entry.exerciseName]) {
-          exerciseCounts[entry.exerciseName] = 0;
+      if (entry.exercise && entry.exercise.Name) { // Access nested Name
+        if (!exerciseCounts[entry.exercise.Name]) {
+          exerciseCounts[entry.exercise.Name] = 0;
         }
-        exerciseCounts[entry.exerciseName]++;
+        exerciseCounts[entry.exercise.Name]++;
       }
     });
+
+    console.log('Exercise counts:', exerciseCounts);
+
     const mostFrequentExercises = Object.keys(exerciseCounts)
       .map(name => ({ name, count: exerciseCounts[name] }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
-    // Calculate weight progress (assuming weight is logged in the entries)
     const weightProgress = entries
       .filter(entry => entry.weight)
       .map(entry => entry.weight);

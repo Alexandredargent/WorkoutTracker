@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Dimensions, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { useFocusEffect } from '@react-navigation/native';
 import { fetchStatistics, fetchWeightHistory } from '../services/firebaseStatisticsService';
@@ -19,12 +19,10 @@ const StatisticsScreen = () => {
         const stats = await fetchStatistics(user.uid);
         setTotalWorkouts(stats.totalWorkouts);
         setMostFrequentExercises(stats.mostFrequentExercises);
-
         const weightData = await fetchWeightHistory(user.uid);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
-        // Filter out future dates and sort chronologically
         const formattedWeightData = weightData
           .filter(entry => {
             const entryDate = new Date(entry.date);
@@ -61,21 +59,17 @@ const StatisticsScreen = () => {
     );
   }
 
-  // Prepare monthly data for the past 6 months (including the current month)
   const currentDate = new Date();
   const monthlyLabels = [];
   const monthlyData = [];
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   let lastValue = null;
 
-  // Loop through the past 6 months (oldest to most recent)
   for (let i = 0; i < 6; i++) {
-    // Calculate the date for each month starting 5 months ago until the current month
     const d = new Date(currentDate.getFullYear(), currentDate.getMonth() - (5 - i), 1);
     const monthLabel = months[d.getMonth()];
     monthlyLabels.push(monthLabel);
 
-    // Filter weightHistory entries for the same month and year
     const weightsForMonth = weightHistory.filter(entry => {
       const entryDate = new Date(entry.date);
       return entryDate.getFullYear() === d.getFullYear() && entryDate.getMonth() === d.getMonth();
@@ -86,7 +80,6 @@ const StatisticsScreen = () => {
       monthlyData.push(value);
       lastValue = value;
     } else {
-      // Use the last known value or default to 0 if no previous data exists
       monthlyData.push(lastValue !== null ? lastValue : 0);
     }
   }
@@ -102,11 +95,20 @@ const StatisticsScreen = () => {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Most Frequent Exercises</Text>
-        {mostFrequentExercises.map((exercise, index) => (
-          <Text key={index} style={styles.exercise}>
-            {exercise.Name}: {exercise.count} times
-          </Text>
-        ))}
+        {mostFrequentExercises.length > 0 ? (
+          mostFrequentExercises.map((exercise, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.exerciseCard}
+              activeOpacity={0.7} // Subtle press effect
+            >
+              <Text style={styles.exerciseName}>{exercise.name}</Text>
+              <Text style={styles.exerciseCount}>{exercise.count} times</Text>
+            </TouchableOpacity>
+          ))
+        ) : (
+          <Text style={styles.emptyText}>Keep logging workouts to see your favorites here!</Text>
+        )}
       </View>
 
       <View style={styles.section}>
@@ -115,13 +117,9 @@ const StatisticsScreen = () => {
           <LineChart
             data={{
               labels: monthlyLabels,
-              datasets: [
-                {
-                  data: monthlyData,
-                },
-              ],
+              datasets: [{ data: monthlyData }],
             }}
-            width={Dimensions.get('window').width - 40} // Adjust for container padding
+            width={Dimensions.get('window').width - 40}
             height={220}
             yAxisSuffix="kg"
             chartConfig={{
@@ -132,11 +130,7 @@ const StatisticsScreen = () => {
               color: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
               labelColor: (opacity = 1) => `rgba(255, 255, 255, ${opacity})`,
               style: { borderRadius: 16 },
-              propsForDots: {
-                r: '6',
-                strokeWidth: '2',
-                stroke: '#ffa726',
-              },
+              propsForDots: { r: '6', strokeWidth: '2', stroke: '#ffa726' },
             }}
             bezier
             style={{ marginVertical: 8, borderRadius: 16 }}
@@ -159,6 +153,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
+    color: '#232799',
   },
   section: {
     marginBottom: 20,
@@ -167,6 +162,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
+    color: '#333',
   },
   totalWorkouts: {
     fontSize: 48,
@@ -174,9 +170,36 @@ const styles = StyleSheet.create({
     color: '#232799',
     textAlign: 'center',
   },
-  exercise: {
+  exerciseCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 15,
+    borderRadius: 8,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3, // For Android shadow
+  },
+  exerciseName: {
     fontSize: 16,
-    marginBottom: 5,
+    fontWeight: '600',
+    color: '#232799',
+    flex: 1, // Allows text to wrap if long
+  },
+  exerciseCount: {
+    fontSize: 14,
+    color: '#666',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#888',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingVertical: 10,
   },
   loadingContainer: {
     flex: 1,
