@@ -91,7 +91,14 @@ const MealListScreen = ({ navigation, route }) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      
+      <TouchableOpacity 
+            style={styles.scanButton} 
+            onPress={() => navigation.navigate('BarcodeScannerScreen')}
+      >
+        <Ionicons name="scan-outline" size={24} color="white" />
+        <Text style={styles.scanButtonText}>Scan</Text>
+      </TouchableOpacity>
+
       <View style={styles.tabs}>
         {renderTabButton('all', 'All Meals')}
         {renderTabButton('popular', 'Popular')}
@@ -199,6 +206,29 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 4,
   },
+  scanButton: {
+    alignSelf: 'center', // Centre horizontalement
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#232799', // Même bleu que tes autres boutons
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    borderRadius: 25, // Arrondi comme les tabs
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 4,
+    marginTop: 10, // Espace sous le bouto
+    
+  },
+  scanButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  
 });
 
 export default MealListScreen;

@@ -10,6 +10,7 @@ import GoalScreen from './screens/GoalScreen';
 import AccountScreen from './screens/AccountScreen';
 import ExerciseListScreen from './screens/ExerciseListScreen';
 import MealListScreen from './screens/MealListScreen';
+import BarcodeScannerScreen from './screens/BarcodeScannerScreen';
 import { auth } from './services/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
@@ -79,7 +80,13 @@ export default function App() {
                     component={MealListScreen} 
                     options={{ title: 'Meals' }}
                 />
+                <Stack.Screen 
+                    name="BarcodeScannerScreen" 
+                    component={BarcodeScannerScreen} 
+                    options={{ title: 'Barcode Scanner' }}
+                />
             </Stack.Navigator>
         </NavigationContainer>
     );
 }
+
