@@ -11,6 +11,8 @@ import {
   ScrollView,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import { addMealToDiary } from '../services/diaryService'; // Import the addMealToDiary function
+import { auth } from '../services/firebase'; // Import auth to get the current user
 
 const renderListItem = ({ label, value, unit }) => (
   <View style={styles.listRow}>
@@ -21,7 +23,7 @@ const renderListItem = ({ label, value, unit }) => (
   </View>
 );
 
-const BarcodeScannerScreen = ({ navigation }) => {
+const BarcodeScannerScreen = ({ navigation, route }) => {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [productInfo, setProductInfo] = useState(null);
@@ -73,12 +75,62 @@ const BarcodeScannerScreen = ({ navigation }) => {
     }
   };
 
-  const handleAddToMeal = () => {
+  const handleAddToMeal = async () => {
     if (productInfo) {
-      navigation.navigate('MealListScreen', { scannedMeal: productInfo });
+      const user = auth.currentUser;
+      
+      // Correctly access the date from route params
+      const date = route.params?.date;
+      
+      console.log("Adding meal for date:", date); // Debug log
+      
+      if (!date) {
+        console.error('No date provided in route params');
+        alert('Error: No date information available');
+        return;
+      }
+      
+      if (user) {
+        try {
+          // Make sure all fields have valid values, especially mealName
+          const mealName = productInfo.name || "Unknown Product";
+          
+          // Create meal object with the correct structure and valid values
+          const meal = {
+            mealName: mealName, // Ensure this is not undefined
+            calories: productInfo.nutriments['energy-kcal'] || 0,
+            carbs: productInfo.nutriments.carbohydrates || 0,
+            lipids: productInfo.nutriments.fat || 0,
+            proteins: productInfo.nutriments.proteins || 0,
+            image: productInfo.image || null,
+            type: "meal", // Add this field as it appears in your database
+            userId: user.uid, // Add this field as it appears in your database
+            date: date // Add this field as it appears in your database
+          };
+          
+          console.log("Adding meal:", meal); // Debug log
+          
+          // Add the meal to the diary
+          await addMealToDiary(user.uid, date, meal);
+          
+          console.log('Meal added successfully'); // Debug log
+          
+          // Navigate 2 screens backward
+          navigation.pop(2);
+        } catch (error) {
+          console.error('Error adding meal:', error);
+          alert('Failed to add meal: ' + error.message);
+        }
+      } else {
+        alert('No user is signed in.');
+      }
+    } else {
+      alert('No product information available.');
     }
   };
-
+  
+  
+  
   const getAdditiveNameFromTag = (tag) => {
     if (!tag) return '';
     let name = tag.replace('en:', '');

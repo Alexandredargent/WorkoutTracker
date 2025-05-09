@@ -66,6 +66,7 @@ const AccountScreen = () => {
       {user ? (
         <View style={styles.userInfo}>
           <Text style={styles.option}>Username: {userInfo.username}</Text>
+          <Text style={styles.option}>Gender: {user.gender}</Text>
           <Text style={styles.option}>Email: {user.email}</Text>
           <Text style={styles.option}>Age: {userInfo.age}</Text>
           <Text style={styles.option}>Weight: {lastWeight !== null ? `${lastWeight} kg` : 'N/A'}</Text>

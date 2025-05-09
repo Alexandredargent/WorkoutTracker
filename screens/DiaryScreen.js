@@ -357,14 +357,44 @@ const DiaryScreen = ({ navigation, route }) => {
   );
 
   const renderMealItem = ({ item }) => (
-    <View style={styles.card}>
+    <TouchableOpacity 
+      style={styles.card}
+      onPress={() => handleMealPress(item)}
+    >
       <View style={styles.cardRow}>
         <Ionicons name="restaurant-outline" size={24} color="#4CAF50" />
-        <Text style={styles.cardTitle}>{item.mealName}</Text>
+        <Text style={styles.cardTitle}>{item.mealName || item.name}</Text>
+        {item.scanned && (
+          <View style={styles.scannedBadge}>
+            <Ionicons name="scan-outline" size={16} color="white" />
+          </View>
+        )}
       </View>
-      <Text style={styles.subText}>{item.calories} calories</Text>
-    </View>
+      
+      {/* Show calories, protein, carbs and lipids for all meals */}
+      <View style={styles.nutritionRow}>
+        <Text style={styles.nutritionItem}>
+          <Text style={styles.nutritionLabel}>Calories:</Text> {item.calories}
+        </Text>
+        <Text style={styles.nutritionItem}>
+          <Text style={styles.nutritionLabel}>Protein:</Text> {item.proteins}g
+        </Text>
+        <Text style={styles.nutritionItem}>
+          <Text style={styles.nutritionLabel}>Carbs:</Text> {item.carbs}g
+        </Text>
+        <Text style={styles.nutritionItem}>
+          <Text style={styles.nutritionLabel}>Fat:</Text> {item.lipids}g
+        </Text>
+      </View>
+      
+      {/* Visual indicator that this is clickable */}
+      <View style={styles.clickableIndicator}>
+        <Text style={styles.clickableText}>Tap for details</Text>
+        <Ionicons name="chevron-down" size={16} color="#999" />
+      </View>
+    </TouchableOpacity>
   );
+  
 
   const renderWeightItem = ({ item }) => (
     <View style={styles.card}>

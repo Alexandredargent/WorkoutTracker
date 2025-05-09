@@ -91,13 +91,13 @@ const MealListScreen = ({ navigation, route }) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      <TouchableOpacity 
-            style={styles.scanButton} 
-            onPress={() => navigation.navigate('BarcodeScannerScreen')}
-      >
-        <Ionicons name="scan-outline" size={24} color="white" />
-        <Text style={styles.scanButtonText}>Scan</Text>
-      </TouchableOpacity>
+      <TouchableOpacity
+  style={styles.scanButton}
+  onPress={() => navigation.navigate('BarcodeScannerScreen', { date })}
+>
+  <Ionicons name="scan-outline" size={24} color="white" />
+  <Text style={styles.scanButtonText}>Scan</Text>
+</TouchableOpacity>
 
       <View style={styles.tabs}>
         {renderTabButton('all', 'All Meals')}

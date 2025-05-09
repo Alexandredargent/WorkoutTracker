@@ -102,18 +102,40 @@ export const deleteExerciseFromDiary = async (entryId) => {
 // Add a meal entry
 export const addMealToDiary = async (userId, date, meal) => {
   try {
-    await addDoc(collection(db, 'diaryEntries'), {
+    // Create a database entry with all the meal properties
+    const mealEntry = {
       userId: userId,
       date: date,
-      mealName: meal.name,
-      calories: meal.calories,
-      type: 'meal'
-    });
+      type: 'meal',
+      // Basic meal info
+      mealName: meal.name || meal.mealName || 'Unknown Meal',
+      calories: meal.calories || 0,
+      // Additional nutritional info
+      carbs: meal.carbs || 0,
+      lipids: meal.lipids || 0,
+      proteins: meal.proteins || 0,
+      // For scanned items
+      image: meal.image || null,
+      scanned: meal.scanned || false,
+      // Open Food Facts specific data
+      productId: meal.id || null,
+      brand: meal.brand || null,
+      nutritionGrade: meal.nutritionGrade || null,
+      ingredients: meal.ingredients || null,
+      allergens: meal.allergens || null,
+    };
+
+    // Add the document to Firestore
+    const docRef = await addDoc(collection(db, 'diaryEntries'), mealEntry);
+    console.log('Meal added with ID: ', docRef.id);
+    
+    return { id: docRef.id, ...mealEntry };
   } catch (error) {
     console.error('Error adding meal to diary:', error);
     throw error;
   }
 };
+
 
 // Add a new weight entry (if there is no weight yet for the day)
 export const addWeightToDiary = async (userId, weightEntry) => {

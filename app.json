@@ -19,7 +19,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "jsEngine": "hermes"  
+      "jsEngine": "jsc"  
     },
     "web": {
       "favicon": "./assets/favicon.png"
