@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, TouchableOpacity, Text, StyleSheet, Animated, Dimensions, PanResponder, SafeAreaView, Platform, StatusBar } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet, Animated, Dimensions, PanResponder, SafeAreaView, Platform, StatusBar, Alert } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
@@ -10,6 +10,7 @@ import StatisticsScreen from '../screens/StatisticsScreen';
 import AccountScreen from '../screens/AccountScreen';
 import { signOut } from 'firebase/auth';
 import { auth } from '../services/firebase';
+import theme from '../styles/theme';
 
 const Tab = createBottomTabNavigator();
 const { width } = Dimensions.get('window');
@@ -29,21 +30,29 @@ const MainNavigator = ({ user, setUser, navigation }) => {
     }).start();
   };
 
-  const handleLogout = async () => {
-    try {
-      await signOut(auth);
-      console.log("User logged out");
-      navigation.navigate('Login');
-    } catch (error) {
-      console.error("Logout error: ", error.message);
-    }
+  const handleLogout = () => {
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to log out?",
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Logout", style: "destructive", onPress: async () => {
+            try {
+              await signOut(auth);
+              navigation.navigate('Login');
+            } catch (error) {
+              console.error("Logout error: ", error.message);
+            }
+          }
+        }
+      ]
+    );
   };
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('blur', () => {
       setIsMenuOpen(false);
     });
-
     return unsubscribe;
   }, [navigation]);
 
@@ -80,36 +89,46 @@ const MainNavigator = ({ user, setUser, navigation }) => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.notificationIcon} onPress={() => {/* Handle notification press */}}>
-          <Ionicons name="notifications-outline" size={30} color="#232799" />
+          <Ionicons name="notifications-outline" size={30} color={theme.colors.primary} />
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuIcon} onPress={toggleMenu}>
-          <Ionicons name="menu" size={30} color="#232799" />
+          <Ionicons name={isMenuOpen ? "close" : "menu"} size={30} color={theme.colors.primary} />
         </TouchableOpacity>
       </View>
 
-      <Animated.View 
+      {isMenuOpen && (
+        <TouchableOpacity
+          style={StyleSheet.absoluteFill}
+          activeOpacity={1}
+          onPress={toggleMenu}
+        >
+          <BlurView intensity={100} style={StyleSheet.absoluteFill} />
+        </TouchableOpacity>
+      )}
+
+      <Animated.View
         style={[
-          styles.menuContainer, 
+          styles.menuContainer,
           { transform: [{ translateX: menuTranslateX }] }
         ]}
+        pointerEvents={isMenuOpen ? 'auto' : 'none'}
         {...panResponder.panHandlers}
       >
-        <BlurView intensity={100} style={StyleSheet.absoluteFill} />
         <View style={styles.menuContent}>
           <TouchableOpacity style={styles.menuItem} onPress={() => {
             toggleMenu();
             navigation.navigate('Account');
           }}>
-            <Ionicons name="person-outline" size={24} color="#232799" />
+            <Ionicons name="person-outline" size={24} color={theme.colors.primary} />
             <Text style={styles.menuItemText}>Manage Profile</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
-            <Ionicons name="log-out-outline" size={24} color="#232799" />
+            <Ionicons name="log-out-outline" size={24} color={theme.colors.primary} />
             <Text style={styles.menuItemText}>Logout</Text>
           </TouchableOpacity>
         </View>
       </Animated.View>
-      
+
       <Tab.Navigator
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused, color, size }) => {
@@ -124,10 +143,9 @@ const MainNavigator = ({ user, setUser, navigation }) => {
             else if (route.name === 'Statistics') {
               iconName = focused ? 'stats-chart' : 'stats-chart-outline';
             }
-
             return <Ionicons name={iconName} size={size} color={color} />;
           },
-          tabBarActiveTintColor: '#232799',//Navigation icons color   #007e83
+          tabBarActiveTintColor: theme.colors.primary,
           tabBarInactiveTintColor: 'gray',
           tabBarStyle: styles.tabBar,
           tabBarLabelStyle: styles.tabBarLabel,
@@ -139,7 +157,6 @@ const MainNavigator = ({ user, setUser, navigation }) => {
         <Tab.Screen name="AddMeal" component={AddMealScreen} options={{ title: 'Meal' }} />
         <Tab.Screen name="Statistics" component={StatisticsScreen} />
       </Tab.Navigator>
-
     </SafeAreaView>
   );
 };
@@ -147,23 +164,21 @@ const MainNavigator = ({ user, setUser, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background,
   },
   header: {
-  flexDirection: 'row',
-  justifyContent: 'flex-end',
-  alignItems: 'center',
-  paddingHorizontal: 20,
-  paddingTop: Platform.OS === 'ios' ? 30 : 10, // was 50, now 30 or 10
-  paddingBottom: 4, // was 10, now 4
-  zIndex: 2,
-},
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: Platform.OS === 'ios' ? 30 : 10,
+    paddingBottom: 4,
+    zIndex: 2,
+  },
   menuIcon: {
     marginLeft: 15,
   },
-  notificationIcon: {
-    // Add any specific styles for the notification icon if needed
-  },
+  notificationIcon: {},
   menuContainer: {
     position: 'absolute',
     top: 0,
@@ -188,10 +203,10 @@ const styles = StyleSheet.create({
   menuItemText: {
     marginLeft: 15,
     fontSize: 18,
-    color: '#232799',
+    color: theme.colors.primary,
   },
   tabBar: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderTopWidth: 1,
     borderTopColor: 'rgba(0, 0, 0, 0.1)',
     height: 60,

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, Button, StyleSheet } from 'react-native';
+import theme from '../styles/theme';
 
 const AddMealScreen = () => {
   const [mealName, setMealName] = useState('');
@@ -73,26 +74,30 @@ const AddMealScreen = () => {
   );
 };
 
-export default AddMealScreen;
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    padding: theme.spacing.md,
     justifyContent: 'center',
+    backgroundColor: theme.colors.background,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    marginBottom: 16,
+    marginBottom: theme.spacing.md,
     textAlign: 'center',
+    color: theme.colors.primary,
   },
   input: {
     height: 40,
-    borderColor: 'gray',
+    borderColor: theme.colors.border,
     borderWidth: 1,
-    marginBottom: 12,
-    paddingHorizontal: 10,
+    marginBottom: theme.spacing.sm + 4,
+    paddingHorizontal: theme.spacing.sm,
     borderRadius: 8,
+    backgroundColor: theme.colors.card,
+    color: theme.colors.text,
   },
 });
+
+export default AddMealScreen;

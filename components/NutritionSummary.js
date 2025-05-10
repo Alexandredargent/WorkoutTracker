@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import theme from '../styles/theme';
 
 const NutritionSummary = ({
   totalCalories,
@@ -19,14 +20,14 @@ const NutritionSummary = ({
       <Text style={styles.nutritionSummaryValue}>{totalCalories} / {calorieGoal} kcal</Text>
     </View>
     <View style={styles.progressBarBackground}>
-      <View style={[styles.progressBarFill, { width: `${getPercent(totalCalories, calorieGoal)}%`, backgroundColor: '#FF9800' }]} />
+      <View style={[styles.progressBarFill, { width: `${getPercent(totalCalories, calorieGoal)}%`, backgroundColor: theme.colors.accent }]} />
     </View>
     <View style={styles.nutritionSummaryRow}>
       <Text style={styles.nutritionSummaryLabel}>Proteins :</Text>
       <Text style={styles.nutritionSummaryValue}>{totalProteins} / {proteinGoal} g</Text>
     </View>
     <View style={styles.progressBarBackground}>
-      <View style={[styles.progressBarFill, { width: `${getPercent(totalProteins, proteinGoal)}%`, backgroundColor: '#4CAF50' }]} />
+      <View style={[styles.progressBarFill, { width: `${getPercent(totalProteins, proteinGoal)}%`, backgroundColor: theme.colors.secondary || '#4CAF50' }]} />
     </View>
     <View style={styles.nutritionSummaryRow}>
       <Text style={styles.nutritionSummaryLabel}>Carbs :</Text>
@@ -40,31 +41,18 @@ const NutritionSummary = ({
       <Text style={styles.nutritionSummaryValue}>{totalLipids} / {lipidGoal} g</Text>
     </View>
     <View style={styles.progressBarBackground}>
-      <View style={[styles.progressBarFill, { width: `${getPercent(totalLipids, lipidGoal)}%`, backgroundColor: '#E91E63' }]} />
+      <View style={[styles.progressBarFill, { width: `${getPercent(totalLipids, lipidGoal)}%`, backgroundColor: theme.colors.error }]} />
     </View>
   </View>
 );
 
 const styles = StyleSheet.create({
   nutritionSummaryCard: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 0,
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    ...theme.nutritionSummaryCard,
   },
   nutritionSummaryTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#232799',
+    ...theme.typography.sectionTitle,
     marginBottom: 8,
-    textAlign: 'center',
   },
   nutritionSummaryRow: {
     flexDirection: 'row',
@@ -72,26 +60,16 @@ const styles = StyleSheet.create({
     marginVertical: 2,
   },
   nutritionSummaryLabel: {
-    fontSize: 16,
-    color: '#333',
+    ...theme.typography.label,
   },
   nutritionSummaryValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#232799',
+    ...theme.typography.value,
   },
   progressBarBackground: {
-    width: '100%',
-    height: 10,
-    backgroundColor: '#eee',
-    borderRadius: 5,
-    marginBottom: 8,
-    marginTop: 2,
-    overflow: 'hidden',
+    ...theme.progressBarBackground,
   },
   progressBarFill: {
-    height: '100%',
-    borderRadius: 5,
+    ...theme.progressBarFill,
   },
 });
 

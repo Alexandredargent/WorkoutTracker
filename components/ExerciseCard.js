@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import theme from '../styles/theme';
 
 const ExerciseCard = ({
   item,
@@ -12,14 +13,14 @@ const ExerciseCard = ({
   onDelete,
   onDeleteSet,
   onEditSet,
-  onInputFocus, // <-- new prop
+  onInputFocus,
 }) => (
   <View style={styles.card}>
     <View style={styles.cardRow}>
-      <Ionicons name="barbell-outline" size={24} color="#232799" />
+      <Ionicons name="barbell-outline" size={24} color={theme.colors.primary} />
       <Text style={styles.cardTitle}>{item.exercise.Name}</Text>
       <TouchableOpacity onPress={() => onDelete(item.id)}>
-        <Ionicons name="trash-outline" size={24} color="red" />
+        <Ionicons name="trash-outline" size={24} color={theme.colors.error} />
       </TouchableOpacity>
     </View>
     <View style={styles.setsHeader}>
@@ -31,19 +32,19 @@ const ExerciseCard = ({
     <View style={styles.setInputContainer}>
       <View style={{ flex: 1, alignItems: 'center' }} />
       <TextInput
-        style={[styles.input, { flex: 1, marginRight: 8 }]}
+        style={styles.input}
         placeholder="Reps"
         value={reps}
         onChangeText={setReps}
-        onFocus={onInputFocus} // <-- collapse on focus
+        onFocus={onInputFocus}
         keyboardType="numeric"
       />
       <TextInput
-        style={[styles.input, { flex: 1, marginRight: 8 }]}
+        style={styles.input}
         placeholder="Weight"
         value={weight}
         onChangeText={setWeight}
-        onFocus={onInputFocus} // <-- collapse on focus
+        onFocus={onInputFocus}
         keyboardType="numeric"
       />
       <TouchableOpacity style={styles.smallButton} onPress={() => onAddSet(item.id)}>
@@ -57,10 +58,10 @@ const ExerciseCard = ({
           <Text style={styles.setText}>{set.reps}</Text>
           <Text style={styles.setText}>{set.weight}</Text>
           <TouchableOpacity onPress={() => onDeleteSet(item.id, set)}>
-            <Ionicons name="trash-outline" size={24} color="red" />
+            <Ionicons name="trash-outline" size={24} color={theme.colors.error} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => onEditSet(item.id, set)}>
-            <Ionicons name="pencil-outline" size={24} color="blue" />
+            <Ionicons name="pencil-outline" size={24} color={theme.colors.primary} />
           </TouchableOpacity>
         </View>
       ))}
@@ -69,11 +70,7 @@ const ExerciseCard = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginVertical: 8,
-    padding: 16,
-    borderRadius: 12,
+    ...theme.card,
   },
   cardRow: {
     flexDirection: 'row',
@@ -83,7 +80,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: theme.colors.text,
     marginLeft: 12,
     flex: 1,
   },
@@ -94,17 +91,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   input: {
-    height: 40,
-    backgroundColor: '#F7F7F7',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    fontSize: 16,
-    color: '#333',
-    minWidth: 80,
+    ...theme.input,
+    flex: 1,
+    marginRight: 8,
     textAlign: 'center',
   },
   smallButton: {
-    backgroundColor: '#232799',
+    ...theme.button,
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
@@ -124,7 +117,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: theme.colors.text,
     textAlign: 'center',
   },
   setRow: {

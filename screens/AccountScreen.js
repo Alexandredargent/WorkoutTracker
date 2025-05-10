@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { auth, db } from '../services/firebase';
 import { doc, getDoc, collection, query, where, orderBy, limit, getDocs } from 'firebase/firestore';
+import theme from '../styles/theme';
 
 const AccountScreen = () => {
   const [user, setUser] = useState(null);
@@ -82,10 +83,26 @@ const AccountScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 24, fontWeight: 'bold' },
-  userInfo: { marginVertical: 20 },
-  option: { marginVertical: 10, fontSize: 18 },
+  container: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center',
+    backgroundColor: theme.colors.background,
+  },
+  title: { 
+    fontSize: 24, 
+    fontWeight: 'bold',
+    color: theme.colors.primary,
+    marginBottom: theme.spacing.lg,
+  },
+  userInfo: { 
+    marginVertical: 20 
+  },
+  option: { 
+    marginVertical: 10, 
+    fontSize: 18,
+    color: theme.colors.text,
+  },
 });
 
 export default AccountScreen;

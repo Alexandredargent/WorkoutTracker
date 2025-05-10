@@ -12,6 +12,7 @@ import {
   Keyboard
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import theme from '../styles/theme';
 
 const FitnessProfileScreen = () => {
   const [weight, setWeight] = useState('');
@@ -153,54 +154,91 @@ const FitnessProfileScreen = () => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f5f5' },
-  scrollContainer: { flexGrow: 1, justifyContent: 'center', paddingBottom: 100 },
-  content: { alignItems: 'center', padding: 20 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20, color: '#333' },
-  inputContainer: { width: '100%', marginBottom: 20 },
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    justifyContent: 'center',
+    paddingBottom: theme.spacing.xl * 2,
+  },
+  content: {
+    alignItems: 'center',
+    padding: theme.spacing.lg,
+  },
+  title: {
+    ...theme.typography.sectionTitle,
+    fontSize: 24,
+    marginBottom: theme.spacing.lg,
+  },
+  inputContainer: {
+    width: '100%',
+    marginBottom: theme.spacing.lg,
+  },
   input: {
-    backgroundColor: 'white',
-    paddingHorizontal: 15,
-    paddingVertical: 12,
+    ...theme.input,
+    backgroundColor: theme.colors.card,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
     borderRadius: 10,
-    marginTop: 10,
+    marginTop: theme.spacing.sm,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border,
     fontSize: 16,
   },
   label: {
-    fontSize: 16,
+    ...theme.typography.label,
     fontWeight: '600',
-    marginTop: 15,
-    marginBottom: 5,
-    color: '#333',
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.xs,
   },
-  genderOptions: { flexDirection: 'column', marginBottom: 10 },
+  genderOptions: {
+    flexDirection: 'column',
+    marginBottom: theme.spacing.sm,
+  },
   genderOption: {
-    backgroundColor: 'white',
-    padding: 12,
+    backgroundColor: theme.colors.card,
+    padding: theme.spacing.md,
     borderRadius: 10,
-    marginVertical: 5,
+    marginVertical: theme.spacing.xs,
     borderWidth: 1,
     borderColor: '#ccc',
   },
   selectedOption: {
-    borderColor: '#232799',
+    borderColor: theme.colors.primary,
     backgroundColor: '#f0f0ff',
     borderWidth: 2,
   },
-  genderText: { fontSize: 16, color: '#333', textAlign: 'center' },
+  genderText: {
+    fontSize: 16,
+    color: theme.colors.text,
+    textAlign: 'center',
+  },
   button: {
-    backgroundColor: '#232799',
+    ...theme.button,
     padding: 15,
     borderRadius: 10,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: theme.spacing.sm,
     width: '100%',
   },
-  buttonText: { color: 'white', fontWeight: '700', fontSize: 16 },
-  error: { color: 'red', marginBottom: 10, textAlign: 'center' },
-  link: { color: '#007AFF', marginTop: 15, textAlign: 'center', fontSize: 16 },
+  buttonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  error: {
+    color: theme.colors.error,
+    marginBottom: theme.spacing.sm,
+    textAlign: 'center',
+  },
+  link: {
+    color: '#007AFF',
+    marginTop: theme.spacing.lg,
+    textAlign: 'center',
+    fontSize: 16,
+  },
 });
 
 export default FitnessProfileScreen;

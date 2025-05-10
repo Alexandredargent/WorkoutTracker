@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../services/firebase';
+import theme from '../styles/theme';
 
 const LoginScreen = ({ navigation, setUser }) => {
   const [email, setEmail] = useState('');
@@ -90,7 +91,7 @@ const LoginScreen = ({ navigation, setUser }) => {
           </View>
           {error ? <Text style={styles.error}>{error}</Text> : null}
           <TouchableOpacity 
-            style={styles.button} 
+            style={[styles.button, isLoading && styles.buttonDisabled]} 
             onPress={handleLogin}
             disabled={isLoading}
           >
@@ -115,7 +116,7 @@ const LoginScreen = ({ navigation, setUser }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   scrollContainer: {
     flexGrow: 1,
@@ -123,49 +124,51 @@ const styles = StyleSheet.create({
   },
   content: {
     alignItems: 'center',
-    padding: 20,
+    padding: theme.spacing.lg,
   },
   logo: {
     width: 100,
     height: 100,
-    marginBottom: 20,
+    marginBottom: theme.spacing.lg,
   },
   title: {
+    ...theme.typography.sectionTitle,
     fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#333',
+    marginBottom: theme.spacing.lg,
   },
   inputContainer: {
     width: '100%',
-    marginBottom: 20,
+    marginBottom: theme.spacing.lg,
   },
   input: {
-    backgroundColor: 'white',
-    paddingHorizontal: 15,
-    paddingVertical: 12,
+    ...theme.input,
+    backgroundColor: '#fff',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
     borderRadius: 10,
-    marginTop: 10,
+    marginTop: theme.spacing.sm,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border,
     fontSize: 16,
   },
   button: {
-    backgroundColor: '#232799',
+    ...theme.button,
     padding: 15,
     borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 10,
+    marginTop: theme.spacing.sm,
     width: '100%',
   },
+  buttonDisabled: {
+    backgroundColor: '#808080',
+  },
   buttonText: {
-    color: 'white',
+    color: '#fff',
     fontWeight: '700',
     fontSize: 16,
   },
   error: {
-    color: 'red',
-    marginBottom: 10,
+    color: theme.colors.error,
+    marginBottom: theme.spacing.sm,
     textAlign: 'center',
   },
   link: {
@@ -174,7 +177,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   linkButton: {
-    marginTop: 20,
+    marginTop: theme.spacing.lg,
   },
 });
 

@@ -13,6 +13,7 @@ import {
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { addMealToDiary } from '../services/diaryService'; // Import the addMealToDiary function
 import { auth } from '../services/firebase'; // Import auth to get the current user
+import theme from '../styles/theme';
 
 const renderListItem = ({ label, value, unit }) => (
   <View style={styles.listRow}>
@@ -504,45 +505,171 @@ const BarcodeScannerScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000', justifyContent: 'center', alignItems: 'center' },
-  permissionText: { color: 'white', textAlign: 'center', marginBottom: 20, fontSize: 16, paddingHorizontal: 20 },
-  scanAgain: { position: 'absolute', bottom: 50, paddingVertical: 12, paddingHorizontal: 20, backgroundColor: 'rgba(0, 0, 255, 0.7)', borderRadius: 25 },
-  scanAgainText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
-  loadingOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center' },
-  loadingText: { color: 'white', marginTop: 10, fontSize: 16 },
-  scrollView: { flex: 1, width: '100%' },
-  productInfoContainer: { backgroundColor: '#f8f8f8', padding: 15 },
-  header: { flexDirection: 'row', marginBottom: 15 },
-  imageContainer: { width: '50%', aspectRatio: 1, backgroundColor: 'white', borderRadius: 10, overflow: 'hidden', marginRight: 10 },
-  productImage: { width: '100%', height: '100%' },
-  noImageContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f0f0f0' },
-  noImageText: { color: '#999', textAlign: 'center' },
-  scoresContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  scoreBox: { borderRadius: 10, padding: 10, marginBottom: 10, alignItems: 'center', minWidth: 100 },
-  scoreLabel: { color: 'white', fontSize: 14 },
-  scoreValue: { color: 'white', fontSize: 24, fontWeight: 'bold' },
-  novaContainer: { backgroundColor: '#eee', borderRadius: 10, padding: 10, alignItems: 'center' },
-  novaLabel: { fontSize: 14, fontWeight: 'bold' },
-  novaValue: { fontSize: 18 },
-  novaDescription: { fontSize: 12, textAlign: 'center' },
-  productName: { fontSize: 22, fontWeight: 'bold', marginBottom: 5 },
-  productBrand: { fontSize: 16, color: '#666', marginBottom: 15 },
-  allergensWarning: { backgroundColor: '#fff3cd', borderWidth: 1, borderColor: '#ffeeba', borderRadius: 5, padding: 10, marginBottom: 15 },
-  allergensTitle: { fontWeight: 'bold', marginBottom: 5 },
-  allergensText: { color: '#856404' },
-  tabContainer: { flexDirection: 'row', justifyContent: 'space-around', marginBottom: 15 },
-  tabButton: { paddingVertical: 10, paddingHorizontal: 15, borderRadius: 20, backgroundColor: '#ccc' },
-  activeTabButton: { backgroundColor: '#4CAF50' },
-  tabButtonText: { color: '#333', fontSize: 16 },
-  activeTabButtonText: { color: 'white', fontWeight: 'bold' },
+  container: { 
+    flex: 1, 
+    backgroundColor: '#000', // Keep black for scanner background
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  permissionText: { 
+    color: 'white', 
+    textAlign: 'center', 
+    marginBottom: 20, 
+    fontSize: 16, 
+    paddingHorizontal: 20 
+  },
+  scanAgain: { 
+    position: 'absolute', 
+    bottom: 50, 
+    paddingVertical: 12, 
+    paddingHorizontal: 20, 
+    backgroundColor: 'rgba(0, 0, 255, 0.7)', 
+    borderRadius: 25 
+  },
+  scanAgainText: { 
+    color: 'white', 
+    fontSize: 16, 
+    fontWeight: 'bold' 
+  },
+  loadingOverlay: { 
+    position: 'absolute', 
+    top: 0, left: 0, right: 0, bottom: 0, 
+    backgroundColor: 'rgba(0,0,0,0.7)', 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  loadingText: { 
+    color: 'white', 
+    marginTop: 10, 
+    fontSize: 16 
+  },
+  scrollView: { 
+    flex: 1, 
+    width: '100%' 
+  },
+  productInfoContainer: { 
+    backgroundColor: theme.colors.background, 
+    padding: theme.spacing.md 
+  },
+  header: { 
+    flexDirection: 'row', 
+    marginBottom: theme.spacing.md 
+  },
+  imageContainer: { 
+    width: '50%', 
+    aspectRatio: 1, 
+    backgroundColor: theme.colors.card, 
+    borderRadius: 10, 
+    overflow: 'hidden', 
+    marginRight: 10 
+  },
+  productImage: { 
+    width: '100%', 
+    height: '100%' 
+  },
+  noImageContainer: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    backgroundColor: '#f0f0f0' 
+  },
+  noImageText: { 
+    color: '#999', 
+    textAlign: 'center' 
+  },
+  scoresContainer: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center' 
+  },
+  scoreBox: { 
+    borderRadius: 10, 
+    padding: 10, 
+    marginBottom: 10, 
+    alignItems: 'center', 
+    minWidth: 100 
+  },
+  scoreLabel: { 
+    color: 'white', 
+    fontSize: 14 
+  },
+  scoreValue: { 
+    color: 'white', 
+    fontSize: 24, 
+    fontWeight: 'bold' 
+  },
+  novaContainer: { 
+    backgroundColor: '#eee', 
+    borderRadius: 10, 
+    padding: 10, 
+    alignItems: 'center' 
+  },
+  novaLabel: { 
+    fontSize: 14, 
+    fontWeight: 'bold' 
+  },
+  novaValue: { 
+    fontSize: 18 
+  },
+  novaDescription: { 
+    fontSize: 12, 
+    textAlign: 'center' 
+  },
+  productName: { 
+    fontSize: 22, 
+    fontWeight: 'bold', 
+    marginBottom: 5 
+  },
+  productBrand: { 
+    fontSize: 16, 
+    color: theme.colors.muted, 
+    marginBottom: 15 
+  },
+  allergensWarning: { 
+    backgroundColor: '#fff3cd', 
+    borderWidth: 1, 
+    borderColor: '#ffeeba', 
+    borderRadius: 5, 
+    padding: 10, 
+    marginBottom: 15 
+  },
+  allergensTitle: { 
+    fontWeight: 'bold', 
+    marginBottom: 5 
+  },
+  allergensText: { 
+    color: '#856404' 
+  },
+  tabContainer: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-around', 
+    marginBottom: 15 
+  },
+  tabButton: { 
+    paddingVertical: 10, 
+    paddingHorizontal: 15, 
+    borderRadius: 20, 
+    backgroundColor: '#ccc' 
+  },
+  activeTabButton: { 
+    backgroundColor: theme.colors.primary 
+  },
+  tabButtonText: { 
+    color: '#333', 
+    fontSize: 16 
+  },
+  activeTabButtonText: { 
+    color: 'white', 
+    fontWeight: 'bold' 
+  },
   biggerTabContent: { 
-    height: 450, // Much taller container to fit more content
-    backgroundColor: '#fff', 
+    height: 450, 
+    backgroundColor: theme.colors.card, 
     borderRadius: 10, 
     padding: 10, 
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: theme.colors.border,
   },
   tabContentContainer: {
     flex: 1,
@@ -552,7 +679,7 @@ const styles = StyleSheet.create({
     fontSize: 18, 
     fontWeight: 'bold', 
     marginBottom: 12,
-    color: '#333',
+    color: theme.colors.text,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
     paddingBottom: 5,
@@ -566,7 +693,7 @@ const styles = StyleSheet.create({
   },
   emptyMessage: {
     fontSize: 14,
-    color: '#888',
+    color: theme.colors.muted,
     fontStyle: 'italic',
     textAlign: 'center',
     marginTop: 20,
@@ -579,11 +706,11 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   nutritionTable: {
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.card,
     borderRadius: 8,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: theme.colors.border,
   },
   nutritionRow: { 
     flexDirection: 'row', 
@@ -592,7 +719,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     borderBottomWidth: 1, 
     borderBottomColor: '#eee',
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.card,
   },
   nutritionRowFirst: {
     borderTopLeftRadius: 8,
@@ -606,7 +733,7 @@ const styles = StyleSheet.create({
   },
   nutritionLabel: { 
     fontSize: 16,
-    color: '#333',
+    color: theme.colors.text,
     fontWeight: '400',
   },
   nutritionValue: { 
@@ -618,7 +745,7 @@ const styles = StyleSheet.create({
   ingredientsText: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#333',
+    color: theme.colors.text,
     marginBottom: 15,
   },
   ingredientsListContainer: {
@@ -633,7 +760,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#4CAF50',
+    backgroundColor: theme.colors.primary,
     marginTop: 7,
     marginRight: 8,
   },
@@ -655,7 +782,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     borderRadius: 5,
     borderLeftWidth: 3,
-    borderLeftColor: '#4CAF50',
+    borderLeftColor: theme.colors.primary,
   },
   additiveWarning: {
     borderLeftColor: '#FFC107', // Yellow for warning
@@ -666,17 +793,41 @@ const styles = StyleSheet.create({
   additiveName: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: '#333',
+    color: theme.colors.text,
     marginBottom: 4,
   },
   additiveDescription: {
     fontSize: 14,
     color: '#666',
   },
-  buttonContainer: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 30 },
-  addButton: { backgroundColor: '#4CAF50', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 25, flex: 1, marginRight: 10, alignItems: 'center' },
-  scanAgainButton: { backgroundColor: '#2196F3', paddingVertical: 12, paddingHorizontal: 20, borderRadius: 25, flex: 1, marginLeft: 10, alignItems: 'center' },
-  buttonText: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+  buttonContainer: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    marginBottom: 30 
+  },
+  addButton: { 
+    backgroundColor: theme.colors.primary, 
+    paddingVertical: 12, 
+    paddingHorizontal: 20, 
+    borderRadius: 25, 
+    flex: 1, 
+    marginRight: 10, 
+    alignItems: 'center' 
+  },
+  scanAgainButton: { 
+    backgroundColor: '#2196F3', 
+    paddingVertical: 12, 
+    paddingHorizontal: 20, 
+    borderRadius: 25, 
+    flex: 1, 
+    marginLeft: 10, 
+    alignItems: 'center' 
+  },
+  buttonText: { 
+    color: 'white', 
+    fontSize: 16, 
+    fontWeight: 'bold' 
+  },
 });
 
 export default BarcodeScannerScreen;

@@ -6,6 +6,7 @@ import {
   getActivityFactor,
   calculateCalorieTarget,
 } from '../utils/nutrition';
+import theme from '../styles/theme';
 
 const HomeScreen = () => {
   const [userInfo, setUserInfo] = useState(null);
@@ -94,21 +95,23 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f4f4f4',
+    backgroundColor: theme.colors.background,
   },
   logo: {
     width: 200,
     height: 200,
-    marginBottom: 20,
+    marginBottom: theme.spacing.lg,
   },
   welcomeText: {
     fontSize: 20,
     fontWeight: 'bold',
+    color: theme.colors.primary,
+    marginBottom: theme.spacing.sm,
   },
   goalText: {
     fontSize: 18,
     marginTop: 10,
-    color: '#232799',
+    color: theme.colors.primary,
     fontWeight: '600',
   },
 });

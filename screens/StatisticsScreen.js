@@ -4,6 +4,7 @@ import { LineChart } from 'react-native-chart-kit';
 import { useFocusEffect } from '@react-navigation/native';
 import { fetchStatistics, fetchWeightHistory } from '../services/firebaseStatisticsService';
 import { auth } from '../services/firebase';
+import theme from '../styles/theme';
 
 const StatisticsScreen = () => {
   const [totalWorkouts, setTotalWorkouts] = useState(0);
@@ -146,60 +147,35 @@ const StatisticsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f4f4f4',
-    padding: 20,
+    backgroundColor: theme.colors.background,
+    padding: theme.spacing.lg,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#232799',
+    ...theme.typography.title,
   },
   section: {
-    marginBottom: 20,
+    marginBottom: theme.spacing.lg,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#333',
+    ...theme.typography.sectionTitle,
   },
   totalWorkouts: {
     fontSize: 48,
     fontWeight: 'bold',
-    color: '#232799',
+    color: theme.colors.primary,
     textAlign: 'center',
   },
   exerciseCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3, // For Android shadow
+    ...theme.card,
   },
   exerciseName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#232799',
-    flex: 1, // Allows text to wrap if long
+    ...theme.typography.exerciseName,
   },
   exerciseCount: {
-    fontSize: 14,
-    color: '#666',
+    ...theme.typography.exerciseCount,
   },
   emptyText: {
-    fontSize: 16,
-    color: '#888',
-    fontStyle: 'italic',
-    textAlign: 'center',
-    paddingVertical: 10,
+    ...theme.typography.emptyText,
   },
   loadingContainer: {
     flex: 1,

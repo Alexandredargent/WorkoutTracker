@@ -14,6 +14,7 @@ import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '../services/firebase';
 import { doc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import theme from '../styles/theme';
 
 const GoalScreen = () => {
   const [goal, setGoal] = useState('');
@@ -143,70 +144,69 @@ const GoalScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   scrollContainer: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingBottom: 100,
+    paddingBottom: theme.spacing.xl * 2,
   },
   content: {
     alignItems: 'center',
-    padding: 20,
+    padding: theme.spacing.lg,
   },
   title: {
+    ...theme.typography.sectionTitle,
     fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#333',
+    marginBottom: theme.spacing.lg,
   },
   inputContainer: {
     width: '100%',
-    marginBottom: 20,
+    marginBottom: theme.spacing.lg,
   },
   option: {
-    backgroundColor: 'white',
-    padding: 20,
+    backgroundColor: theme.colors.card,
+    padding: theme.spacing.lg,
     borderRadius: 10,
-    marginVertical: 8,
+    marginVertical: theme.spacing.sm,
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: theme.colors.border,
     width: '100%',
   },
   selectedOption: {
-    borderColor: '#232799',
+    borderColor: theme.colors.primary,
     backgroundColor: '#f0f0ff',
     borderWidth: 2,
   },
   optionText: {
     fontSize: 16,
-    color: '#333',
+    color: theme.colors.text,
     textAlign: 'center',
   },
   button: {
-    backgroundColor: '#232799',
+    ...theme.button,
     padding: 15,
     borderRadius: 10,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: theme.spacing.sm,
     width: '100%',
   },
   disabledButton: {
     backgroundColor: '#808080',
   },
   buttonText: {
-    color: 'white',
+    color: '#fff',
     fontWeight: '700',
     fontSize: 16,
   },
   error: {
-    color: 'red',
-    marginBottom: 10,
+    color: theme.colors.error,
+    marginBottom: theme.spacing.sm,
     textAlign: 'center',
   },
   link: {
     color: '#007AFF',
-    marginTop: 15,
+    marginTop: theme.spacing.lg,
     textAlign: 'center',
     fontSize: 16,
   },

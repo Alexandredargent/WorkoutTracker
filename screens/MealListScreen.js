@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, SafeAreaView, StatusBar, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, SafeAreaView, StatusBar, ActivityIndicator, StyleSheet } from 'react-native';
 import { fetchMeals } from '../services/firebaseMealService.js';
 import { addMealToDiary } from '../services/diaryService';
 import { auth } from '../services/firebase';
 import { Ionicons } from '@expo/vector-icons';
+import theme from '../styles/theme';
 
 const MealListScreen = ({ navigation, route }) => {
   const [meals, setMeals] = useState([]);
@@ -57,7 +58,7 @@ const MealListScreen = ({ navigation, route }) => {
       onPress={() => handleAddMeal(item)}
     >
       <View style={styles.itemContent}>
-        <Ionicons name="restaurant-outline" size={24} color="#232799" style={styles.itemIcon} />
+        <Ionicons name="restaurant-outline" size={24} color={theme.colors.primary} style={styles.itemIcon} />
         <View style={styles.itemTextContainer}>
           <Text style={styles.itemText}>{item.name}</Text>
           <Text style={styles.caloriesText}>{item.calories} calories</Text>
@@ -67,7 +68,7 @@ const MealListScreen = ({ navigation, route }) => {
           {item.isPopular && <Text style={styles.popularTag}>Popular</Text>}
         </View>
       </View>
-      <Ionicons name="add-circle-outline" size={24} color="#232799" />
+      <Ionicons name="add-circle-outline" size={24} color={theme.colors.primary} />
     </TouchableOpacity>
   );
   
@@ -83,7 +84,7 @@ const MealListScreen = ({ navigation, route }) => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#232799" />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
@@ -92,12 +93,12 @@ const MealListScreen = ({ navigation, route }) => {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
       <TouchableOpacity
-  style={styles.scanButton}
-  onPress={() => navigation.navigate('BarcodeScannerScreen', { date })}
->
-  <Ionicons name="scan-outline" size={24} color="white" />
-  <Text style={styles.scanButtonText}>Scan</Text>
-</TouchableOpacity>
+        style={styles.scanButton}
+        onPress={() => navigation.navigate('BarcodeScannerScreen', { date })}
+      >
+        <Ionicons name="scan-outline" size={24} color="white" />
+        <Text style={styles.scanButtonText}>Scan</Text>
+      </TouchableOpacity>
 
       <View style={styles.tabs}>
         {renderTabButton('all', 'All Meals')}
@@ -118,64 +119,58 @@ const MealListScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F4F6F9',
+    backgroundColor: theme.colors.background,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F4F6F9',
+    backgroundColor: theme.colors.background,
   },
   tabs: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginBottom: 20,
-    backgroundColor: '#FFFFFF',
+    marginBottom: theme.spacing.lg,
+    backgroundColor: theme.colors.card,
     borderRadius: 25,
-    margin: 20,
-    padding: 5,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    margin: theme.spacing.lg,
+    padding: theme.spacing.xs,
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
   },
   tab: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: theme.spacing.sm + 2,
     alignItems: 'center',
     borderRadius: 20,
   },
   activeTab: {
-    backgroundColor: '#232799',
+    backgroundColor: theme.colors.primary,
   },
   tabText: {
     fontSize: 16,
-    color: '#232799',
+    color: theme.colors.primary,
   },
   activeTabText: {
     color: '#FFFFFF',
     fontWeight: 'bold',
   },
   listContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: theme.spacing.lg,
   },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 15,
-    backgroundColor: '#FFFFFF',
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.card,
     borderRadius: 10,
-    marginBottom: 10,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
+    marginBottom: theme.spacing.sm,
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.22,
     shadowRadius: 2.22,
     elevation: 3,
@@ -186,41 +181,40 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   itemIcon: {
-    marginRight: 15,
+    marginRight: theme.spacing.md,
   },
   itemTextContainer: {
     flex: 1,
   },
   itemText: {
     fontSize: 18,
-    color: '#333',
+    color: theme.colors.text,
   },
   caloriesText: {
     fontSize: 14,
-    color: '#666',
+    color: theme.colors.muted,
     marginTop: 2,
   },
   popularTag: {
     fontSize: 12,
-    color: '#232799',
+    color: theme.colors.primary,
     fontWeight: 'bold',
     marginTop: 4,
   },
   scanButton: {
-    alignSelf: 'center', // Centre horizontalement
+    alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#232799', // Même bleu que tes autres boutons
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-    borderRadius: 25, // Arrondi comme les tabs
-    shadowColor: "#000",
+    backgroundColor: theme.colors.primary,
+    paddingVertical: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.lg,
+    borderRadius: 25,
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 3,
     elevation: 4,
-    marginTop: 10, // Espace sous le bouto
-    
+    marginTop: theme.spacing.md,
   },
   scanButtonText: {
     color: 'white',
@@ -228,7 +222,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 8,
   },
-  
 });
 
 export default MealListScreen;

@@ -16,6 +16,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { db } from '../services/firebase';
 import { doc, getDoc, collection, writeBatch } from 'firebase/firestore';
+import theme from '../styles/theme';
 
 const SignUpScreen = ({ setUser }) => {
   const [username, setUsername] = useState('');
@@ -193,69 +194,69 @@ const SignUpScreen = ({ setUser }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.background,
   },
   scrollContainer: {
     flexGrow: 1,
     justifyContent: 'center',
-    paddingBottom: 100,
+    paddingBottom: theme.spacing.xl * 2,
   },
   content: {
     alignItems: 'center',
-    padding: 20,
+    padding: theme.spacing.lg,
   },
   logo: {
     width: 100,
     height: 100,
-    marginBottom: 20,
+    marginBottom: theme.spacing.lg,
   },
   title: {
+    ...theme.typography.sectionTitle,
     fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    color: '#333',
+    marginBottom: theme.spacing.lg,
   },
   inputContainer: {
     width: '100%',
-    marginBottom: 20,
+    marginBottom: theme.spacing.lg,
   },
   input: {
-    backgroundColor: 'white',
-    paddingHorizontal: 15,
-    paddingVertical: 12,
+    ...theme.input,
+    backgroundColor: '#fff',
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.sm,
     borderRadius: 10,
-    marginTop: 10,
+    marginTop: theme.spacing.sm,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: theme.colors.border,
     fontSize: 16,
   },
   invalidInput: {
-    borderColor: 'red',
+    borderColor: theme.colors.error,
   },
   button: {
-    backgroundColor: '#232799',
+    ...theme.button,
     padding: 15,
     borderRadius: 10,
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: theme.spacing.sm,
     width: '100%',
   },
   disabledButton: {
     backgroundColor: '#808080',
   },
   buttonText: {
-    color: 'white',
+    color: '#fff',
     fontWeight: '700',
     fontSize: 16,
   },
   error: {
-    color: 'red',
-    marginBottom: 10,
+    color: theme.colors.error,
+    marginBottom: theme.spacing.sm,
     textAlign: 'center',
   },
   link: {
     color: '#007AFF',
-    marginTop: 15,
+    marginTop: theme.spacing.md,
     textAlign: 'center',
     fontSize: 16,
   },

@@ -41,6 +41,7 @@ import MealCard from '../components/MealCard';
 import ExerciseCard from '../components/ExerciseCard';
 import WeightCard from '../components/WeightCard';
 import NutritionSummary from '../components/NutritionSummary';
+import theme from '../styles/theme';
 
 const { width } = Dimensions.get('window');
 
@@ -417,14 +418,14 @@ const DiaryScreen = ({ navigation, route }) => {
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => handleDateChange(subDays(selectedDate, 1))}>
-            <Ionicons name="chevron-back" size={24} color="#232799" />
+            <Ionicons name="chevron-back" size={24} color={theme.colors.primary} />
           </TouchableOpacity>
           <TouchableOpacity onPress={showDatePicker} style={styles.dateButton}>
             <Text style={styles.dateText}>{format(selectedDate, 'MMMM d, yyyy')}</Text>
-            <Ionicons name="calendar-outline" size={20} color="#232799" style={styles.calendarIcon} />
+            <Ionicons name="calendar-outline" size={20} color={theme.colors.primary} style={styles.calendarIcon} />
           </TouchableOpacity>
           <TouchableOpacity onPress={() => handleDateChange(addDays(selectedDate, 1))}>
-            <Ionicons name="chevron-forward" size={24} color="#232799" />
+            <Ionicons name="chevron-forward" size={24} color={theme.colors.primary} />
           </TouchableOpacity>
         </View>
 
@@ -450,7 +451,7 @@ const DiaryScreen = ({ navigation, route }) => {
               style={{ alignSelf: 'center', marginVertical: 8 }}
               onPress={handleExpandNutrition}
             >
-              <Text style={{ color: '#232799', fontWeight: 'bold' }}>Show Nutrition Summary</Text>
+              <Text style={{ color: theme.colors.primary, fontWeight: 'bold' }}>Show Nutrition Summary</Text>
             </TouchableOpacity>
           )
 
@@ -458,7 +459,7 @@ const DiaryScreen = ({ navigation, route }) => {
           <ScrollView style={styles.entriesContainer} contentContainerStyle={styles.entriesContent}>
             {loading ? (
               <View style={styles.centerContent}>
-                <ActivityIndicator size="large" color="#232799" />
+                <ActivityIndicator size="large" color={theme.colors.primary} />
               </View>
             ) : (
               <>
@@ -468,12 +469,12 @@ const DiaryScreen = ({ navigation, route }) => {
                     onPress={() => toggleSection('exercise')}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
-                    <Ionicons name="barbell" size={32} color="#232799" style={{ marginRight: 8 }} />
+                    <Ionicons name="barbell" size={32} color={theme.colors.primary} style={{ marginRight: 8 }} />
                     <Text style={styles.sectionTitle}>Exercises</Text>
                     <Ionicons
                       name={activeSections.includes('exercise') ? 'chevron-up' : 'chevron-down'}
                       size={24}
-                      color="#232799"
+                      color={theme.colors.primary}
                     />
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -483,7 +484,7 @@ const DiaryScreen = ({ navigation, route }) => {
                     }
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
-                    <Ionicons name="add-circle" size={28} color="#232799" />
+                    <Ionicons name="add-circle" size={28} color={theme.colors.primary} />
                   </TouchableOpacity>
                 </View>
                 <Collapsible collapsed={!activeSections.includes('exercise')}>
@@ -517,12 +518,12 @@ const DiaryScreen = ({ navigation, route }) => {
                     onPress={() => toggleSection('meal')}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
-                    <Ionicons name="restaurant" size={32} color="#232799" style={{ marginRight: 8 }} />
+                    <Ionicons name="restaurant" size={32} color={theme.colors.primary} style={{ marginRight: 8 }} />
                     <Text style={styles.sectionTitle}>Meals</Text>
                     <Ionicons
                       name={activeSections.includes('meal') ? 'chevron-up' : 'chevron-down'}
                       size={24}
-                      color="#232799"
+                      color={theme.colors.primary}
                     />
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -532,7 +533,7 @@ const DiaryScreen = ({ navigation, route }) => {
                     }
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
-                    <Ionicons name="add-circle" size={28} color="#232799" />
+                    <Ionicons name="add-circle" size={28} color={theme.colors.primary} />
                   </TouchableOpacity>
                 </View>
                 <Collapsible collapsed={!activeSections.includes('meal')}>
@@ -553,7 +554,7 @@ const DiaryScreen = ({ navigation, route }) => {
                 </Collapsible>
 
                 <View style={styles.sectionHeader}>
-                  <Ionicons name="scale" size={32} color="#232799" style={{ marginRight: 8 }} />
+                  <Ionicons name="scale" size={32} color={theme.colors.primary} style={{ marginRight: 8 }} />
                   <Text style={styles.sectionTitle}>Weight</Text>
                   <TouchableOpacity
                     style={styles.headerAddButton}
@@ -561,9 +562,9 @@ const DiaryScreen = ({ navigation, route }) => {
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
                     {weightEntry ? (
-                      <Ionicons name="pencil" size={28} color="#232799" />
+                      <Ionicons name="pencil" size={28} color={theme.colors.primary} />
                     ) : (
-                      <Ionicons name="add-circle" size={28} color="#232799" />
+                      <Ionicons name="add-circle" size={28} color={theme.colors.primary} />
                     )}
                   </TouchableOpacity>
                 </View>
@@ -674,19 +675,19 @@ const DiaryScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#EFEFF4',
+    backgroundColor: theme.colors.background,
   },
   container: {
     flex: 1,
-    backgroundColor: '#EFEFF4',
+    backgroundColor: theme.colors.background,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
+    padding: theme.spacing.md,
+    backgroundColor: theme.colors.card,
+    shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -703,7 +704,7 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#232799',
+    color: theme.colors.primary,
   },
   calendarIcon: { marginLeft: 4 },
   animatedContainer: {
@@ -712,13 +713,13 @@ const styles = StyleSheet.create({
   },
   entriesContainer: {
     flex: 1,
-    marginHorizontal: 16,
-    marginVertical: 8,
+    marginHorizontal: theme.spacing.md,
+    marginVertical: theme.spacing.sm,
     borderRadius: 12,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
   },
   entriesContent: {
-    paddingVertical: 8,
+    paddingVertical: theme.spacing.sm,
     paddingBottom: 20,
   },
   centerContent: {
@@ -728,21 +729,11 @@ const styles = StyleSheet.create({
     minHeight: 200,
   },
   emptyMessage: {
-    fontSize: 16,
-    color: '#888',
+    ...theme.typography.empty,
     marginTop: 12,
   },
   sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#F7F7F7',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginHorizontal: 16,
-    marginTop: 16,
-    borderRadius: 8,
-    position: 'relative',
+    ...theme.sectionHeader,
   },
   headerToggle: {
     flexDirection: 'row',
@@ -751,24 +742,17 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#232799',
-    textAlign: 'center',
+    ...theme.typography.sectionTitle,
   },
   headerAddButton: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.card,
     borderRadius: 20,
     padding: 4,
     position: 'absolute',
-    right: 16,
+    right: theme.spacing.md,
   },
   card: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginVertical: 8,
-    padding: 16,
-    borderRadius: 12,
+    ...theme.card,
   },
   cardRow: {
     flexDirection: 'row',
@@ -778,7 +762,7 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
+    color: theme.colors.text,
     marginLeft: 12,
     flex: 1,
   },
@@ -794,18 +778,12 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   input: {
-    flex: 1,
-    height: 40,
-    backgroundColor: '#F7F7F7',
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    ...theme.input,
     marginRight: 8,
-    fontSize: 16,
-    color: '#333',
-    minWidth: 80,
+    flex: 1,
   },
   smallButton: {
-    backgroundColor: '#232799',
+    ...theme.button,
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
@@ -825,7 +803,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
+    color: theme.colors.text,
     textAlign: 'center',
   },
   setRow: {
@@ -847,91 +825,49 @@ const styles = StyleSheet.create({
   },
   emptySection: {
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: theme.spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
   emptySectionText: {
-    fontSize: 16,
-    color: '#888',
+    ...theme.typography.empty,
   },
   modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    ...theme.modal.overlay,
   },
   modalContainer: {
-    width: '80%',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    alignItems: 'center',
-    elevation: 5,
+    ...theme.modal.container,
   },
   modalLabel: {
-    alignSelf: 'flex-start',
-    marginBottom: 5,
-    fontSize: 16,
-    color: '#333',
+    ...theme.modal.label,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    marginBottom: 12,
-    color: '#232799',
+    ...theme.modal.title,
   },
   modalInput: {
-    width: '100%',
-    height: 40,
-    backgroundColor: '#F7F7F7',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    marginBottom: 20,
-    fontSize: 16,
-    color: '#333',
+    ...theme.modal.input,
   },
   modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
+    ...theme.modal.buttons,
   },
   modalButton: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 8,
-    marginHorizontal: 5,
-    alignItems: 'center',
+    ...theme.modal.button,
   },
   cancelButton: {
-    backgroundColor: '#ccc',
+    ...theme.modal.cancelButton,
   },
   submitButton: {
-    backgroundColor: '#232799',
+    ...theme.modal.submitButton,
   },
   modalButtonText: {
-    color: '#FFF',
-    fontWeight: 'bold',
+    ...theme.modal.buttonText,
   },
   nutritionSummaryCard: {
-    backgroundColor: '#fff',
-    marginHorizontal: 16,
-    marginTop: 16,
-    marginBottom: 0,
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
+    ...theme.nutritionSummaryCard,
   },
   nutritionSummaryTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#232799',
+    ...theme.typography.sectionTitle,
     marginBottom: 8,
-    textAlign: 'center',
   },
   nutritionSummaryRow: {
     flexDirection: 'row',
@@ -939,26 +875,16 @@ const styles = StyleSheet.create({
     marginVertical: 2,
   },
   nutritionSummaryLabel: {
-    fontSize: 16,
-    color: '#333',
+    ...theme.typography.label,
   },
   nutritionSummaryValue: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#232799',
+    ...theme.typography.value,
   },
   progressBarBackground: {
-    width: '100%',
-    height: 10,
-    backgroundColor: '#eee',
-    borderRadius: 5,
-    marginBottom: 8,
-    marginTop: 2,
-    overflow: 'hidden',
+    ...theme.progressBarBackground,
   },
   progressBarFill: {
-    height: '100%',
-    borderRadius: 5,
+    ...theme.progressBarFill,
   },
 });
 
