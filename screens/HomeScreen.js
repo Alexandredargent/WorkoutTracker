@@ -2,6 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import { auth, db } from '../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import {
+  getActivityFactor,
+  calculateCalorieTarget,
+} from '../utils/nutrition';
 
 const HomeScreen = () => {
   const [userInfo, setUserInfo] = useState(null);
@@ -17,17 +21,6 @@ const HomeScreen = () => {
     }
   };
 
-  const getActivityFactor = (level) => {
-    switch (level) {
-      case 'sedentary': return 1.2;
-      case 'light': return 1.375;
-      case 'moderate': return 1.55;
-      case 'intense': return 1.725;
-      case 'very_intense': return 1.9;
-      default: return 1.2;
-    }
-  };
-
   const getActivityLabel = (level) => {
     switch (level) {
       case 'sedentary': return 'Sedentary (×1.2)';
@@ -37,28 +30,6 @@ const HomeScreen = () => {
       case 'very_intense': return 'Very Intense (×1.9)';
       default: return 'Unknown';
     }
-  };
-
-  const calculateCalorieTarget = ({ age, height, weight, gender, goal, activityLevel }) => {
-    let bmr;
-
-    // Mifflin-St Jeor Formula
-    if (gender === 'male') {
-      bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5;
-    } else {
-      bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161;
-    }
-
-    const activityFactor = getActivityFactor(activityLevel);
-    let calories = bmr * activityFactor;
-
-    if (goal === 'gain_weight') {
-      calories += 300;
-    } else if (goal === 'lose_weight') {
-      calories -= 300;
-    }
-
-    return Math.round(calories);
   };
 
   useEffect(() => {

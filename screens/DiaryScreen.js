@@ -28,29 +28,48 @@ import { auth } from '../services/firebase.js';
 import { Ionicons } from '@expo/vector-icons';
 import { Animated, PanResponder, Dimensions } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../services/firebase.js';
+import {
+  getProteinGoal,
+  getLipidGoal,
+  getCarbGoal,
+  getActivityFactor,
+  calculateCalorieTarget,
+} from '../utils/nutrition';
+import MealCard from '../components/MealCard';
+import ExerciseCard from '../components/ExerciseCard';
+import WeightCard from '../components/WeightCard';
+import NutritionSummary from '../components/NutritionSummary';
 
 const { width } = Dimensions.get('window');
 
 const DiaryScreen = ({ navigation, route }) => {
+  // State variables for UI and data
   const today = new Date();
   const [selectedDate, setSelectedDate] = useState(today);
   const [isDatePickerVisible, setDatePickerVisibility] = useState(false);
   const [entries, setEntries] = useState([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [loading, setLoading] = useState(false); // Start as false, controlled by animation
+  const [loading, setLoading] = useState(false);
   const [reps, setReps] = useState('');
   const [weight, setWeight] = useState('');
   const [weightInput, setWeightInput] = useState('');
   const [isWeightModalVisible, setIsWeightModalVisible] = useState(false);
   const [activeSections, setActiveSections] = useState([]);
-  const [shouldFetch, setShouldFetch] = useState(true); // New state to sync fetching with animation
+  const [shouldFetch, setShouldFetch] = useState(true);
   const [isEditSetModalVisible, setIsEditSetModalVisible] = useState(false);
   const [currentSet, setCurrentSet] = useState(null);
   const [currentEntryId, setCurrentEntryId] = useState(null);
+  const [userInfo, setUserInfo] = useState(null);
+  const [calorieGoal, setCalorieGoal] = useState(2000);
+  const [nutritionCollapsed, setNutritionCollapsed] = useState(false);
 
+  // Animation refs for swipe navigation
   const pan = useRef(new Animated.ValueXY()).current;
   const opacity = useRef(new Animated.Value(1)).current;
 
+  // PanResponder for swipe navigation between days
   const panResponder = PanResponder.create({
     onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dx) > 5,
     onPanResponderGrant: () => {
@@ -73,13 +92,14 @@ const DiaryScreen = ({ navigation, route }) => {
     },
   });
 
+  // Animate page transition when changing date
   const animatePageChange = (newDate, toValue) => {
     Animated.parallel([
       Animated.timing(pan.x, { toValue: toValue, duration: 400, useNativeDriver: false }),
       Animated.timing(opacity, { toValue: 0, duration: 400, useNativeDriver: false }),
     ]).start(() => {
       handleDateChange(newDate);
-      setShouldFetch(true); // Trigger fetch after fade-out
+      setShouldFetch(true);
       pan.setValue({ x: -toValue, y: 0 });
       Animated.parallel([
         Animated.spring(pan.x, { toValue: 0, useNativeDriver: false, friction: 8 }),
@@ -88,6 +108,7 @@ const DiaryScreen = ({ navigation, route }) => {
     });
   };
 
+  // Fetch diary entries when date changes
   useFocusEffect(
     useCallback(() => {
       const refreshEntries = async () => {
@@ -112,15 +133,13 @@ const DiaryScreen = ({ navigation, route }) => {
     }, [selectedDate])
   );
 
+  // Add exercise from navigation params and refresh entries
   useEffect(() => {
     if (route.params?.exercise) {
       const { exercise, date } = route.params;
       const addAndRefresh = async () => {
         try {
-          // Add the exercise to the diary
           await addExerciseToDiary(auth.currentUser.uid, date, exercise);
-          
-          // Immediately fetch updated diary entries for the selected date
           setLoading(true);
           const user = auth.currentUser;
           if (user) {
@@ -128,30 +147,47 @@ const DiaryScreen = ({ navigation, route }) => {
               user.uid,
               format(selectedDate, 'yyyy-MM-dd')
             );
-            setEntries(fetchedEntries); // Refresh the exercise list
+            setEntries(fetchedEntries);
           }
           setLoading(false);
-          
-          // Optional: Expand the exercises section
           setActiveSections(['exercise']);
-          
-          // Clear the route param to prevent unintended re-triggering
           navigation.setParams({ exercise: null });
         } catch (error) {
           console.error('Error adding exercise and refreshing:', error);
           setLoading(false);
         }
       };
-      
       addAndRefresh();
     }
   }, [route.params?.exercise, navigation, selectedDate]);
 
+  // Fetch user info and set calorie goal on mount
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        const user = auth.currentUser;
+        if (!user) return;
+        const docRef = doc(db, 'users', user.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setUserInfo(data);
+          setCalorieGoal(calculateCalorieTarget(data));
+        }
+      } catch (err) {
+        console.error('Error fetching user data:', err);
+      }
+    };
+    fetchUserInfo();
+  }, []);
+
+  // Date change handler
   const handleDateChange = (date) => {
     setSelectedDate(date);
-    setActiveSections([]); // Reset collapsible sections to collapsed state
+    setActiveSections([]);
   };
 
+  // Date picker handlers
   const showDatePicker = () => setDatePickerVisibility(true);
   const hideDatePicker = () => setDatePickerVisibility(false);
   const handleConfirm = (date) => {
@@ -159,18 +195,17 @@ const DiaryScreen = ({ navigation, route }) => {
     handleDateChange(date);
   };
 
+  // Add set to exercise handler
   const handleAddSet = async (entryId) => {
     if (!reps || !weight) {
       Alert.alert('Input Error', 'Please enter both reps and weight.');
       return;
     }
-  
     const set = {
       reps: parseInt(reps),
       weight: parseFloat(weight),
       timestamp: new Date().toISOString(),
     };
-  
     try {
       await addSetToExercise(entryId, set);
       setReps('');
@@ -188,6 +223,7 @@ const DiaryScreen = ({ navigation, route }) => {
     }
   };
 
+  // Delete set from exercise handler
   const handleDeleteSet = async (entryId, set) => {
     try {
       await deleteSetFromExercise(entryId, set);
@@ -204,6 +240,7 @@ const DiaryScreen = ({ navigation, route }) => {
     }
   };
 
+  // Update set in exercise handler
   const handleUpdateSet = async (entryId, oldSet, newSet) => {
     try {
       await updateSetInExercise(entryId, oldSet, newSet);
@@ -220,6 +257,7 @@ const DiaryScreen = ({ navigation, route }) => {
     }
   };
 
+  // Delete exercise from diary handler
   const handleDeleteExercise = async (entryId) => {
     try {
       await deleteExerciseFromDiary(entryId);
@@ -230,6 +268,7 @@ const DiaryScreen = ({ navigation, route }) => {
     }
   };
 
+  // Open weight modal handler
   const handleOpenWeightModal = () => {
     const existingWeight = entries.find(entry => entry.weight !== undefined);
     if (existingWeight) {
@@ -240,17 +279,16 @@ const DiaryScreen = ({ navigation, route }) => {
     setIsWeightModalVisible(true);
   };
 
+  // Submit weight handler
   const handleSubmitWeight = async () => {
     if (!weightInput) {
       Alert.alert('Input Error', 'Please enter your weight.');
       return;
     }
-
     const weightEntry = {
       weight: parseFloat(weightInput),
       date: format(selectedDate, 'yyyy-MM-dd'),
     };
-
     try {
       const existingWeight = entries.find(entry => entry.weight !== undefined);
       if (existingWeight) {
@@ -264,7 +302,7 @@ const DiaryScreen = ({ navigation, route }) => {
         const newWeightEntry = await addWeightToDiary(auth.currentUser.uid, weightEntry);
         setEntries((prevEntries) => [...prevEntries, { ...weightEntry, id: newWeightEntry.id }]);
       }
-      setRefreshTrigger(prev => prev + 1); // Trigger re-fetch
+      setRefreshTrigger(prev => prev + 1);
       setIsWeightModalVisible(false);
     } catch (error) {
       console.error('Error processing weight entry:', error);
@@ -272,6 +310,7 @@ const DiaryScreen = ({ navigation, route }) => {
     }
   };
 
+  // Edit set modal handler
   const handleEditSet = (entryId, set) => {
     setCurrentSet(set);
     setCurrentEntryId(entryId);
@@ -280,18 +319,17 @@ const DiaryScreen = ({ navigation, route }) => {
     setIsEditSetModalVisible(true);
   };
 
+  // Save set handler for edit modal
   const handleSaveSet = async () => {
     if (!reps || !weight) {
       Alert.alert('Input Error', 'Please enter both reps and weight.');
       return;
     }
-
     const newSet = {
       ...currentSet,
       reps: parseInt(reps),
       weight: parseFloat(weight),
     };
-
     try {
       await handleUpdateSet(currentEntryId, currentSet, newSet);
       setIsEditSetModalVisible(false);
@@ -305,97 +343,24 @@ const DiaryScreen = ({ navigation, route }) => {
     }
   };
 
-  const renderExerciseItem = ({ item }) => (
-    <View style={styles.card}>
-      <View style={styles.cardRow}>
-        <Ionicons name="barbell-outline" size={24} color="#232799" />
-        <Text style={styles.cardTitle}>{item.exercise.Name}</Text>
-        <TouchableOpacity onPress={() => handleDeleteExercise(item.id)}>
-          <Ionicons name="trash-outline" size={24} color="red" />
-        </TouchableOpacity>
-      </View>
-      <View style={styles.setInputContainer}>
-        <TextInput
-          style={styles.input}
-          placeholder="Reps"
-          value={reps}
-          onChangeText={setReps}
-          keyboardType="numeric"
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Weight"
-          value={weight}
-          onChangeText={setWeight}
-          keyboardType="numeric"
-        />
-        <TouchableOpacity style={styles.smallButton} onPress={() => handleAddSet(item.id)}>
-          <Text style={styles.smallButtonText}>Add Set</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.setsHeader}>
-        <Text style={styles.setsHeaderText}>Set</Text>
-        <Text style={styles.setsHeaderText}>Reps</Text>
-        <Text style={styles.setsHeaderText}>Weight (kg)</Text>
-        <View style={{ width: 48 }} /> 
-      </View>
-      {item.sets &&
-        item.sets.map((set, index) => (
-          <View key={index} style={styles.setRow}>
-            <Text style={styles.setText}>{index + 1}</Text>
-            <Text style={styles.setText}>{set.reps}</Text>
-            <Text style={styles.setText}>{set.weight}</Text>
-            <TouchableOpacity onPress={() => handleDeleteSet(item.id, set)}>
-              <Ionicons name="trash-outline" size={24} color="red" />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => handleEditSet(item.id, set)}>
-              <Ionicons name="pencil-outline" size={24} color="blue" />
-            </TouchableOpacity>
-          </View>
-        ))}
-    </View>
-  );
+  // Handle meal card press (you can customize what happens here)
+  const handleMealPress = (item) => {
+    // For example, navigate to a meal detail screen or open a modal
+    // navigation.navigate('MealDetailScreen', { meal: item });
+    Alert.alert('Meal pressed', `You pressed on ${item.mealName || item.name}`);
+  };
 
+  // Render a single meal card
   const renderMealItem = ({ item }) => (
-    <TouchableOpacity 
-      style={styles.card}
-      onPress={() => handleMealPress(item)}
-    >
-      <View style={styles.cardRow}>
-        <Ionicons name="restaurant-outline" size={24} color="#4CAF50" />
-        <Text style={styles.cardTitle}>{item.mealName || item.name}</Text>
-        {item.scanned && (
-          <View style={styles.scannedBadge}>
-            <Ionicons name="scan-outline" size={16} color="white" />
-          </View>
-        )}
-      </View>
-      
-      {/* Show calories, protein, carbs and lipids for all meals */}
-      <View style={styles.nutritionRow}>
-        <Text style={styles.nutritionItem}>
-          <Text style={styles.nutritionLabel}>Calories:</Text> {item.calories}
-        </Text>
-        <Text style={styles.nutritionItem}>
-          <Text style={styles.nutritionLabel}>Protein:</Text> {item.proteins}g
-        </Text>
-        <Text style={styles.nutritionItem}>
-          <Text style={styles.nutritionLabel}>Carbs:</Text> {item.carbs}g
-        </Text>
-        <Text style={styles.nutritionItem}>
-          <Text style={styles.nutritionLabel}>Fat:</Text> {item.lipids}g
-        </Text>
-      </View>
-      
-      {/* Visual indicator that this is clickable */}
-      <View style={styles.clickableIndicator}>
-        <Text style={styles.clickableText}>Tap for details</Text>
-        <Ionicons name="chevron-down" size={16} color="#999" />
-      </View>
-    </TouchableOpacity>
+    <MealCard
+      key={item.id || item.mealName}
+      item={item}
+      onPress={handleMealPress}
+      // ...other props as needed
+    />
   );
-  
 
+  // Render a single weight card
   const renderWeightItem = ({ item }) => (
     <View style={styles.card}>
       <View style={styles.cardRow}>
@@ -411,6 +376,7 @@ const DiaryScreen = ({ navigation, route }) => {
     </View>
   );
 
+  // Toggle section open/close handler
   const toggleSection = (section) => {
     setActiveSections((prevSections) =>
       prevSections.includes(section)
@@ -419,12 +385,36 @@ const DiaryScreen = ({ navigation, route }) => {
     );
   };
 
+  // Calculate macro goals based on user info and calorie goal
+  const proteinGoal = userInfo ? getProteinGoal(userInfo.weight) : 0;
+  const lipidGoal = userInfo ? getLipidGoal(userInfo.weight) : 0;
+  const carbGoal = userInfo ? getCarbGoal(calorieGoal, proteinGoal, lipidGoal) : 0;
+
+  // Calculate daily totals from meal entries
+  const mealEntries = entries.filter(entry => entry.mealName);
+  const totalCalories = mealEntries.reduce((sum, m) => sum + (Number(m.calories) || 0), 0);
+  const totalProteins = mealEntries.reduce((sum, m) => sum + (Number(m.proteins) || 0), 0);
+  const totalCarbs = mealEntries.reduce((sum, m) => sum + (Number(m.carbs) || 0), 0);
+  const totalLipids = mealEntries.reduce((sum, m) => sum + (Number(m.lipids) || 0), 0);
+
+  // Utility to get percent for progress bars
+  const getPercent = (value, goal) => {
+    if (!goal || goal === 0) return 0;
+    return Math.min(100, Math.round((value / goal) * 100));
+  };
+
+  // Find weight entry for the day
   const weightEntry = entries.find(entry => entry.weight !== undefined);
+
+  // Collapse nutrition summary when exercise input is focused
+  const handleExerciseInputFocus = () => setNutritionCollapsed(true);
+
+  // Expand nutrition summary
+  const handleExpandNutrition = () => setNutritionCollapsed(false);
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
-        {/* Header and Date Navigation */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => handleDateChange(subDays(selectedDate, 1))}>
             <Ionicons name="chevron-back" size={24} color="#232799" />
@@ -438,11 +428,33 @@ const DiaryScreen = ({ navigation, route }) => {
           </TouchableOpacity>
         </View>
 
-        {/* Animated entries */}
         <Animated.View
           style={[styles.animatedContainer, { transform: [{ translateX: pan.x }], opacity: opacity }]}
           {...panResponder.panHandlers}
         >
+          <Collapsible collapsed={nutritionCollapsed}>
+            <NutritionSummary
+              totalCalories={totalCalories}
+              calorieGoal={calorieGoal}
+              totalProteins={totalProteins}
+              proteinGoal={proteinGoal}
+              totalCarbs={totalCarbs}
+              carbGoal={carbGoal}
+              totalLipids={totalLipids}
+              lipidGoal={lipidGoal}
+              getPercent={getPercent}
+            />
+          </Collapsible>
+          {nutritionCollapsed && (
+            <TouchableOpacity
+              style={{ alignSelf: 'center', marginVertical: 8 }}
+              onPress={handleExpandNutrition}
+            >
+              <Text style={{ color: '#232799', fontWeight: 'bold' }}>Show Nutrition Summary</Text>
+            </TouchableOpacity>
+          )
+
+          }
           <ScrollView style={styles.entriesContainer} contentContainerStyle={styles.entriesContent}>
             {loading ? (
               <View style={styles.centerContent}>
@@ -450,7 +462,6 @@ const DiaryScreen = ({ navigation, route }) => {
               </View>
             ) : (
               <>
-                {/* Exercises Section Header */}
                 <View style={styles.sectionHeader}>
                   <TouchableOpacity
                     style={styles.headerToggle}
@@ -478,9 +489,20 @@ const DiaryScreen = ({ navigation, route }) => {
                 <Collapsible collapsed={!activeSections.includes('exercise')}>
                   {entries.filter(entry => entry.exercise).length > 0 ? (
                     entries.filter(entry => entry.exercise).map(item => (
-                      <View key={item.id || item.exercise.exerciseName}>
-                        {renderExerciseItem({ item })}
-                      </View>
+                      <ExerciseCard
+                        key={item.id || item.exercise.exerciseName}
+                        item={item}
+                        reps={reps}
+                        weight={weight}
+                        setReps={setReps}
+                        setWeight={setWeight}
+                        onAddSet={handleAddSet}
+                        onDelete={handleDeleteExercise}
+                        onDeleteSet={handleDeleteSet}
+                        onEditSet={handleEditSet}
+                        onInputFocus={handleExerciseInputFocus} // Pass this
+                        // ...other props as needed
+                      />
                     ))
                   ) : (
                     <View style={styles.emptySection}>
@@ -489,7 +511,6 @@ const DiaryScreen = ({ navigation, route }) => {
                   )}
                 </Collapsible>
 
-                {/* Meals Section Header */}
                 <View style={styles.sectionHeader}>
                   <TouchableOpacity
                     style={styles.headerToggle}
@@ -517,9 +538,12 @@ const DiaryScreen = ({ navigation, route }) => {
                 <Collapsible collapsed={!activeSections.includes('meal')}>
                   {entries.filter(entry => entry.mealName).length > 0 ? (
                     entries.filter(entry => entry.mealName).map(item => (
-                      <View key={item.id || item.mealName}>
-                        {renderMealItem({ item })}
-                      </View>
+                      <MealCard
+                        key={item.id || item.mealName}
+                        item={item}
+                        onPress={handleMealPress}
+                        // ...other props as needed
+                      />
                     ))
                   ) : (
                     <View style={styles.emptySection}>
@@ -528,7 +552,6 @@ const DiaryScreen = ({ navigation, route }) => {
                   )}
                 </Collapsible>
 
-                {/* Weight Section - No collapse */}
                 <View style={styles.sectionHeader}>
                   <Ionicons name="scale" size={32} color="#232799" style={{ marginRight: 8 }} />
                   <Text style={styles.sectionTitle}>Weight</Text>
@@ -545,9 +568,11 @@ const DiaryScreen = ({ navigation, route }) => {
                   </TouchableOpacity>
                 </View>
                 {weightEntry ? (
-                  <View style={styles.card}>
-                    {renderWeightItem({ item: weightEntry })}
-                  </View>
+                  <WeightCard
+                    item={weightEntry}
+                    onEdit={handleOpenWeightModal}
+                    // ...other props as needed
+                  />
                 ) : (
                   <View style={styles.emptySection}>
                     <Text style={styles.emptySectionText}>No weight logged for this day</Text>
@@ -558,7 +583,6 @@ const DiaryScreen = ({ navigation, route }) => {
           </ScrollView>
         </Animated.View>
 
-        {/* Date Picker */}
         <DateTimePickerModal
           isVisible={isDatePickerVisible}
           mode="date"
@@ -566,7 +590,6 @@ const DiaryScreen = ({ navigation, route }) => {
           onCancel={hideDatePicker}
         />
 
-        {/* Weight Input Modal */}
         <Modal
           animationType="fade"
           transparent={true}
@@ -601,7 +624,6 @@ const DiaryScreen = ({ navigation, route }) => {
           </View>
         </Modal>
 
-        {/* Edit Set Modal */}
         <Modal
           animationType="fade"
           transparent={true}
@@ -649,7 +671,6 @@ const DiaryScreen = ({ navigation, route }) => {
   );
 };
 
-
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -665,7 +686,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     backgroundColor: '#fff',
-    // Removed shadow props for consistency, but kept for header as it's static
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -688,7 +708,7 @@ const styles = StyleSheet.create({
   calendarIcon: { marginLeft: 4 },
   animatedContainer: {
     flex: 1,
-    overflow: 'hidden', // Still useful for animation clipping
+    overflow: 'hidden',
   },
   entriesContainer: {
     flex: 1,
@@ -696,7 +716,6 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     borderRadius: 12,
     backgroundColor: '#fff',
-    // Shadows removed
   },
   entriesContent: {
     paddingVertical: 8,
@@ -716,33 +735,33 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center', // Center the content
+    justifyContent: 'center',
     backgroundColor: '#F7F7F7',
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginHorizontal: 16,
     marginTop: 16,
     borderRadius: 8,
-    position: 'relative', // Ensure the add button is positioned correctly
+    position: 'relative',
   },
   headerToggle: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center', // Center the toggle content
-    flex: 1, // Ensure the toggle takes up available space
+    justifyContent: 'center',
+    flex: 1,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#232799',
-    textAlign: 'center', // Center the text
+    textAlign: 'center',
   },
   headerAddButton: {
     backgroundColor: '#fff',
     borderRadius: 20,
     padding: 4,
-    position: 'absolute', // Position the add button absolutely
-    right: 16, // Align it to the right
+    position: 'absolute',
+    right: 16,
   },
   card: {
     backgroundColor: '#fff',
@@ -750,7 +769,6 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     padding: 16,
     borderRadius: 12,
-    // Shadows removed
   },
   cardRow: {
     flexDirection: 'row',
@@ -813,7 +831,7 @@ const styles = StyleSheet.create({
   setRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center', // Ensure items are centered vertically
+    alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
@@ -849,7 +867,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 20,
     alignItems: 'center',
-    elevation: 5, // Kept for modal as it’s static
+    elevation: 5,
   },
   modalLabel: {
     alignSelf: 'flex-start',
@@ -894,6 +912,53 @@ const styles = StyleSheet.create({
   modalButtonText: {
     color: '#FFF',
     fontWeight: 'bold',
+  },
+  nutritionSummaryCard: {
+    backgroundColor: '#fff',
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 0,
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  nutritionSummaryTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#232799',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  nutritionSummaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginVertical: 2,
+  },
+  nutritionSummaryLabel: {
+    fontSize: 16,
+    color: '#333',
+  },
+  nutritionSummaryValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#232799',
+  },
+  progressBarBackground: {
+    width: '100%',
+    height: 10,
+    backgroundColor: '#eee',
+    borderRadius: 5,
+    marginBottom: 8,
+    marginTop: 2,
+    overflow: 'hidden',
+  },
+  progressBarFill: {
+    height: '100%',
+    borderRadius: 5,
   },
 });
 

@@ -150,14 +150,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 50, 
-    paddingBottom: 10,
-    zIndex: 2,
-  },
+  flexDirection: 'row',
+  justifyContent: 'flex-end',
+  alignItems: 'center',
+  paddingHorizontal: 20,
+  paddingTop: Platform.OS === 'ios' ? 30 : 10, // was 50, now 30 or 10
+  paddingBottom: 4, // was 10, now 4
+  zIndex: 2,
+},
   menuIcon: {
     marginLeft: 15,
   },
