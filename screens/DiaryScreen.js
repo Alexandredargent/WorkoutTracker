@@ -433,7 +433,9 @@ const DiaryScreen = ({ navigation, route }) => {
           style={[styles.animatedContainer, { transform: [{ translateX: pan.x }], opacity: opacity }]}
           {...panResponder.panHandlers}
         >
-          <Collapsible collapsed={nutritionCollapsed}>
+          
+          <ScrollView style={styles.entriesContainer} contentContainerStyle={styles.entriesContent}>
+            
             <NutritionSummary
               totalCalories={totalCalories}
               calorieGoal={calorieGoal}
@@ -445,18 +447,8 @@ const DiaryScreen = ({ navigation, route }) => {
               lipidGoal={lipidGoal}
               getPercent={getPercent}
             />
-          </Collapsible>
-          {nutritionCollapsed && (
-            <TouchableOpacity
-              style={{ alignSelf: 'center', marginVertical: 8 }}
-              onPress={handleExpandNutrition}
-            >
-              <Text style={{ color: theme.colors.primary, fontWeight: 'bold' }}>Show Nutrition Summary</Text>
-            </TouchableOpacity>
-          )
-
-          }
-          <ScrollView style={styles.entriesContainer} contentContainerStyle={styles.entriesContent}>
+          
+          
             {loading ? (
               <View style={styles.centerContent}>
                 <ActivityIndicator size="large" color={theme.colors.primary} />

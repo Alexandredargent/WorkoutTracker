@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 30 : 10,
+    paddingTop: Platform.OS === 'ios' ? 30 : 30,
     paddingBottom: 4,
     zIndex: 2,
   },
