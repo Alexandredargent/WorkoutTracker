@@ -1,0 +1,84 @@
+[
+  
+  {
+    "name": "Banana",
+    "calories": 89,
+    "proteins": 1.1,
+    "carbs": 22.8,
+    "lipids": 0.3,
+    "per": "100g",
+    "source": "manual"
+  },
+  {
+    "name": "Chicken breast",
+    "calories": 165,
+    "proteins": 31,
+    "carbs": 0,
+    "lipids": 3.6,
+    "per": "100g",
+    "source": "manual"
+  },
+  {
+    "name": "Broccoli",
+    "calories": 34,
+    "proteins": 2.8,
+    "carbs": 6.6,
+    "lipids": 0.3,
+    "per": "100g",
+    "source": "manual"
+  },
+  {
+    "name": "Olive oil",
+    "calories": 884,
+    "proteins": 0,
+    "carbs": 0,
+    "lipids": 100,
+    "per": "100g",
+    "source": "manual"
+  },
+  {
+    "name": "White rice",
+    "calories": 130,
+    "proteins": 2.7,
+    "carbs": 28,
+    "lipids": 0.3,
+    "per": "100g",
+    "source": "manual"
+  },
+  {
+    "name": "Almonds",
+    "calories": 579,
+    "proteins": 21,
+    "carbs": 22,
+    "lipids": 50,
+    "per": "100g",
+    "source": "manual"
+  },
+  {
+    "name": "Apple",
+    "calories": 52,
+    "proteins": 0.3,
+    "carbs": 14,
+    "lipids": 0.2,
+    "per": "100g",
+    "source": "manual"
+  },
+  {
+    "name": "Whole milk",
+    "calories": 61,
+    "proteins": 3.2,
+    "carbs": 4.8,
+    "lipids": 3.3,
+    "per": "100ml",
+    "source": "manual"
+  },
+  {
+    "name": "Salmon",
+    "calories": 208,
+    "proteins": 20,
+    "carbs": 0,
+    "lipids": 13,
+    "per": "100g",
+    "source": "manual"
+  }
+]

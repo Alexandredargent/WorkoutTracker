@@ -32,7 +32,7 @@ yarn-error.*
 .env*.local
 .env
 workouttracker-33781-firebase-adminsdk-nqgkf-55e3c17280.json
-
+workouttracker-33781-firebase-adminsdk-nqgkf-fe7efaa048.json
 # typescript
 *.tsbuildinfo
 
@@ -42,3 +42,4 @@ workouttracker-33781-firebase-adminsdk-nqgkf-55e3c17280.json
 *.xlsx
 *.csv
 Dossier TFE/
+scripts/

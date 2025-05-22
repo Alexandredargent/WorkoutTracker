@@ -7,7 +7,9 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "upload:exercises": "node services/uploadExercises.js"
+    "upload:exercises": "node scripts/uploadExercises.js",
+    "upload:ingredients": "node scripts/uploadIngredients.js",
+    "fix:exercises": "node scripts/fixExercisesFields.js"
   },
   "dependencies": {
     "@emotion/react": "^11.13.3",
