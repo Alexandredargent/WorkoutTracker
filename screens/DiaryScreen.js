@@ -30,13 +30,12 @@ import { auth } from '../services/firebase.js';
 import { Ionicons } from '@expo/vector-icons';
 import { Animated, PanResponder, Dimensions } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '../services/firebase.js';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { db } from '../services/firebase';
 import {
   getProteinGoal,
   getLipidGoal,
   getCarbGoal,
-  getActivityFactor,
   calculateCalorieTarget,
 } from '../utils/nutrition';
 import MealCard from '../components/MealCard';
@@ -44,6 +43,7 @@ import ExerciseCard from '../components/ExerciseCard';
 import WeightCard from '../components/WeightCard';
 import NutritionSummary from '../components/NutritionSummary';
 import theme from '../styles/theme';
+import { Button } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
@@ -65,8 +65,11 @@ const DiaryScreen = ({ navigation, route }) => {
   const [currentSet, setCurrentSet] = useState(null);
   const [currentEntryId, setCurrentEntryId] = useState(null);
   const [userInfo, setUserInfo] = useState(null);
-  const [calorieGoal, setCalorieGoal] = useState(2000);
+
   const [nutritionCollapsed, setNutritionCollapsed] = useState(false);
+  const [editMealModalVisible, setEditMealModalVisible] = useState(false);
+  const [selectedMealEntry, setSelectedMealEntry] = useState(null);
+  const [editQuantity, setEditQuantity] = useState('');
 
   // Animation refs for swipe navigation
   const pan = useRef(new Animated.ValueXY()).current;
@@ -175,7 +178,7 @@ const DiaryScreen = ({ navigation, route }) => {
         if (docSnap.exists()) {
           const data = docSnap.data();
           setUserInfo(data);
-          setCalorieGoal(calculateCalorieTarget(data));
+          // REMOVE setCalorieGoal here!
         }
       } catch (err) {
         console.error('Error fetching user data:', err);
@@ -183,6 +186,15 @@ const DiaryScreen = ({ navigation, route }) => {
     };
     fetchUserInfo();
   }, []);
+
+  // Update calorie goal when weight entry changes
+  useEffect(() => {
+    if (userInfo && weightEntry && weightEntry.weight) {
+      // Update userInfo with the new weight for goal calculations
+      const updatedUserInfo = { ...userInfo, weight: weightEntry.weight };
+      setCalorieGoal(calculateCalorieTarget(updatedUserInfo));
+    }
+  }, [weightEntry?.weight]);
 
   // Date change handler
   const handleDateChange = (date) => {
@@ -401,17 +413,27 @@ const DiaryScreen = ({ navigation, route }) => {
     );
   };
 
+  // Find weight entry for the day
+  const weightEntry = entries.find(entry => entry.weight !== undefined);
+
   // Calculate macro goals based on user info and calorie goal
-  const proteinGoal = userInfo ? getProteinGoal(userInfo.weight) : 0;
-  const lipidGoal = userInfo ? getLipidGoal(userInfo.weight) : 0;
-  const carbGoal = userInfo ? getCarbGoal(calorieGoal, proteinGoal, lipidGoal) : 0;
+  const currentWeight = weightEntry && weightEntry.weight ? weightEntry.weight : (userInfo ? userInfo.weight : 0);
+
+  const proteinGoal = getProteinGoal(currentWeight);
+  const lipidGoal = getLipidGoal(currentWeight);
+
+  const calorieGoal = userInfo
+    ? calculateCalorieTarget({ ...userInfo, weight: currentWeight })
+    : 0;
+
+  const carbGoal = getCarbGoal(calorieGoal, proteinGoal, lipidGoal);
 
   // Calculate daily totals from meal entries
   const mealEntries = entries.filter(entry => entry.mealName);
-  const totalCalories = mealEntries.reduce((sum, m) => sum + (Number(m.calories) || 0), 0);
-  const totalProteins = mealEntries.reduce((sum, m) => sum + (Number(m.proteins) || 0), 0);
-  const totalCarbs = mealEntries.reduce((sum, m) => sum + (Number(m.carbs) || 0), 0);
-  const totalLipids = mealEntries.reduce((sum, m) => sum + (Number(m.lipids) || 0), 0);
+  const totalCalories = mealEntries.reduce((sum, m) => sum + ((Number(m.calories) || 0) * (m.quantity || 100) / 100), 0);
+  const totalProteins = mealEntries.reduce((sum, m) => sum + ((Number(m.proteins) || 0) * (m.quantity || 100) / 100), 0);
+  const totalCarbs = mealEntries.reduce((sum, m) => sum + ((Number(m.carbs) || 0) * (m.quantity || 100) / 100), 0);
+  const totalLipids = mealEntries.reduce((sum, m) => sum + ((Number(m.lipids) || 0) * (m.quantity || 100) / 100), 0);
 
   // Utility to get percent for progress bars
   const getPercent = (value, goal) => {
@@ -419,14 +441,31 @@ const DiaryScreen = ({ navigation, route }) => {
     return Math.min(100, Math.round((value / goal) * 100));
   };
 
-  // Find weight entry for the day
-  const weightEntry = entries.find(entry => entry.weight !== undefined);
-
   // Collapse nutrition summary when exercise input is focused
   const handleExerciseInputFocus = () => setNutritionCollapsed(true);
 
   // Expand nutrition summary
   const handleExpandNutrition = () => setNutritionCollapsed(false);
+
+  // Update meal quantity handler
+  const handleUpdateMealQuantity = async () => {
+    if (!selectedMealEntry) return;
+    try {
+      const entryRef = doc(db, 'diaryEntries', selectedMealEntry.id);
+      await updateDoc(entryRef, { quantity: parseFloat(editQuantity) || 100 });
+      // Optionally refresh diary entries here
+      setEntries(prev =>
+        prev.map(e =>
+          e.id === selectedMealEntry.id
+            ? { ...e, quantity: parseFloat(editQuantity) || 100 }
+            : e
+        )
+      );
+    } catch (error) {
+      console.error('Error updating meal quantity:', error);
+      alert('Failed to update quantity');
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -559,8 +598,12 @@ const DiaryScreen = ({ navigation, route }) => {
                         key={item.id || item.mealName}
                         item={item}
                         onPress={handleMealPress}
-                        onDelete={() => handleDeleteMeal(item.id)} // Pass the delete handler
-                        // ...other props as needed
+                        onDelete={() => handleDeleteMeal(item.id)}
+                        onEditQuantity={() => {
+                          setSelectedMealEntry(item);
+                          setEditQuantity(String(item.quantity || 100));
+                          setEditMealModalVisible(true);
+                        }}
                       />
                     ))
                   ) : (
@@ -681,6 +724,33 @@ const DiaryScreen = ({ navigation, route }) => {
                   <Text style={styles.modalButtonText}>Save</Text>
                 </TouchableOpacity>
               </View>
+            </View>
+          </View>
+        </Modal>
+
+        <Modal
+          visible={editMealModalVisible}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setEditMealModalVisible(false)}
+        >
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0008' }}>
+            <View style={{ backgroundColor: 'white', padding: 20, borderRadius: 10, width: 250 }}>
+              <Text>Modify quantity (grams):</Text>
+              <TextInput
+                value={editQuantity}
+                onChangeText={setEditQuantity}
+                keyboardType="numeric"
+                style={{ borderBottomWidth: 1, marginBottom: 10, fontSize: 18, padding: 4 }}
+              />
+              <Button
+                title="Save"
+                onPress={async () => {
+                  await handleUpdateMealQuantity();
+                  setEditMealModalVisible(false);
+                }}
+              />
+              <Button title="Cancel" onPress={() => setEditMealModalVisible(false)} />
             </View>
           </View>
         </Modal>

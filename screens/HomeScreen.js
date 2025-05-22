@@ -1,17 +1,24 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import { auth, db } from '../services/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import {
   getActivityFactor,
   calculateCalorieTarget,
+  getProteinGoal,
+  getLipidGoal,
+  getCarbGoal
 } from '../utils/nutrition';
 import theme from '../styles/theme';
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
+import NutritionSummary from '../components/NutritionSummary';
 
 const HomeScreen = () => {
   const [userInfo, setUserInfo] = useState(null);
   const [calorieTarget, setCalorieTarget] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [entries, setEntries] = useState([]);
 
   const getGoalLabel = (goal) => {
     switch (goal) {
@@ -33,39 +40,81 @@ const HomeScreen = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchUserInfo = async () => {
-      try {
-        const user = auth.currentUser;
-        if (!user) return;
+  useFocusEffect(
+    useCallback(() => {
+      const fetchUserInfo = async () => {
+        try {
+          const user = auth.currentUser;
+          if (!user) return;
 
-        const docRef = doc(db, 'users', user.uid);
-        const docSnap = await getDoc(docRef);
+          const docRef = doc(db, 'users', user.uid);
+          const docSnap = await getDoc(docRef);
 
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setUserInfo(data);
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            setUserInfo(data);
 
-          const target = calculateCalorieTarget({
-            age: data.age,
-            height: data.height,
-            weight: data.weight,
-            gender: data.gender,
-            goal: data.goal,
-            activityLevel: data.activityLevel
-          });
+            const target = calculateCalorieTarget({
+              age: data.age,
+              height: data.height,
+              weight: data.weight,
+              gender: data.gender,
+              goal: data.goal,
+              activityLevel: data.activityLevel
+            });
 
-          setCalorieTarget(target);
+            setCalorieTarget(target);
+          }
+        } catch (err) {
+          console.error('Error fetching user data:', err);
+        } finally {
+          setLoading(false);
         }
-      } catch (err) {
-        console.error('Error fetching user data:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+      };
 
-    fetchUserInfo();
+      fetchUserInfo();
+    }, [])
+  );
+
+  // Fetch today's diary entries:
+  useEffect(() => {
+    const fetchEntries = async () => {
+      const user = auth.currentUser;
+      if (!user) return;
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      const todayStr = `${yyyy}-${mm}-${dd}`;
+      const q = query(
+        collection(db, 'diaryEntries'),
+        where('userId', '==', user.uid),
+        where('date', '==', todayStr)
+      );
+      const snapshot = await getDocs(q);
+      setEntries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    };
+    fetchEntries();
   }, []);
+
+  // Find weight entry for the day
+  const weightEntry = entries.find(entry => entry.weight !== undefined);
+  const currentWeight = weightEntry && weightEntry.weight ? weightEntry.weight : (userInfo ? userInfo.weight : 0);
+
+  const proteinGoal = getProteinGoal(currentWeight);
+  const lipidGoal = getLipidGoal(currentWeight);
+  const calorieGoal = userInfo
+    ? calculateCalorieTarget({ ...userInfo, weight: currentWeight })
+    : 0;
+  const carbGoal = getCarbGoal(calorieGoal, proteinGoal, lipidGoal);
+
+  const mealEntries = entries.filter(entry => entry.mealName);
+  const totalCalories = mealEntries.reduce((sum, m) => sum + ((Number(m.calories) || 0) * (m.quantity || 100) / 100), 0);
+  const totalProteins = mealEntries.reduce((sum, m) => sum + ((Number(m.proteins) || 0) * (m.quantity || 100) / 100), 0);
+  const totalCarbs = mealEntries.reduce((sum, m) => sum + ((Number(m.carbs) || 0) * (m.quantity || 100) / 100), 0);
+  const totalLipids = mealEntries.reduce((sum, m) => sum + ((Number(m.lipids) || 0) * (m.quantity || 100) / 100), 0);
+
+  const getPercent = (value, goal) => goal ? Math.min(100, (value / goal) * 100) : 0;
 
   if (loading) {
     return (
@@ -82,10 +131,21 @@ const HomeScreen = () => {
       {userInfo && (
         <>
           <Text style={styles.goalText}>🎯 Goal: {getGoalLabel(userInfo.goal)}</Text>
-          <Text style={styles.goalText}>🔥 Daily Calorie Target: {calorieTarget} kcal</Text>
+          
           <Text style={styles.goalText}>⚡ Activity Level: {getActivityLabel(userInfo.activityLevel)}</Text>
         </>
       )}
+      <NutritionSummary
+        totalCalories={totalCalories}
+        calorieGoal={calorieGoal}
+        totalProteins={totalProteins}
+        proteinGoal={proteinGoal}
+        totalCarbs={totalCarbs}
+        carbGoal={carbGoal}
+        totalLipids={totalLipids}
+        lipidGoal={lipidGoal}
+        getPercent={getPercent}
+      />
     </View>
   );
 };

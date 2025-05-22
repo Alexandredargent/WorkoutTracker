@@ -1,9 +1,9 @@
 import React from 'react';
-import { TouchableOpacity, View, Text, StyleSheet } from 'react-native';
+import { TouchableOpacity, View, Text, StyleSheet, Button } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import theme from '../styles/theme';
 
-const MealCard = ({ item, onPress, onDelete }) => ( // Added onDelete prop
+const MealCard = ({ item, onPress, onDelete, onEditQuantity }) => ( // Added onEditQuantity prop
   <TouchableOpacity
     style={styles.card}
     onPress={() => onPress(item)}
@@ -19,41 +19,49 @@ const MealCard = ({ item, onPress, onDelete }) => ( // Added onDelete prop
             <Ionicons name="scan-outline" size={16} color="white" />
           </View>
         )}
-        {onDelete && ( // Conditionally render delete button
+        {onDelete && (
           <TouchableOpacity onPress={onDelete} style={styles.deleteButton}>
             <Ionicons name="trash-outline" size={22} color={theme.colors.danger || 'red'} />
           </TouchableOpacity>
         )}
+        {onEditQuantity && (
+          <TouchableOpacity onPress={onEditQuantity} style={styles.editButton}>
+            <Ionicons name="create-outline" size={22} color={theme.colors.primary} />
+          </TouchableOpacity>
+        )}
       </View>
     </View>
-    {/* Calories on its own line */}
+    {/* Calories row */}
     <View style={styles.caloriesRow}>
-      <Text style={styles.caloriesItem}>
-        <Text style={styles.nutritionLabel}>Calories:</Text> {item.calories}
-      </Text>
+      {(() => {
+        const qty = item.quantity || 100;
+        return (
+          <Text style={styles.caloriesItem}>
+            <Text style={styles.nutritionLabel}>Calories:</Text> {((item.calories || 0) * qty / 100).toFixed(1)}
+          </Text>
+        );
+      })()}
     </View>
-    {/* Macros below */}
+    {/* Proteins, Carbs, Lipids row */}
     <View style={styles.nutritionRow}>
-      <Text style={styles.nutritionItem}>
-        <Text style={styles.nutritionLabel}>Proteins:</Text> {item.proteins}g
-      </Text>
-      <Text style={styles.nutritionItem}>
-        <Text style={styles.nutritionLabel}>Carbs:</Text> {item.carbs}g
-      </Text>
-      <Text style={styles.nutritionItem}>
-        <Text style={styles.nutritionLabel}>Lipids:</Text> {item.lipids}g
-      </Text>
+      {(() => {
+        const qty = item.quantity || 100;
+        return (
+          <>
+            <Text style={styles.nutritionItem}>
+              <Text style={styles.nutritionLabel}>Proteins:</Text> {((item.proteins || 0) * qty / 100).toFixed(1)}g
+            </Text>
+            <Text style={styles.nutritionItem}>
+              <Text style={styles.nutritionLabel}>Carbs:</Text> {((item.carbs || 0) * qty / 100).toFixed(1)}g
+            </Text>
+            <Text style={styles.nutritionItem}>
+              <Text style={styles.nutritionLabel}>Lipids:</Text> {((item.lipids || 0) * qty / 100).toFixed(1)}g
+            </Text>
+            <Text style={styles.nutritionLabel}>({qty}g)</Text>
+          </>
+        );
+      })()}
     </View>
-    {/* 
-      The "Tap for details" indicator might be redundant if the whole card is pressable.
-      You can uncomment it if you prefer to have it.
-    */}
-    {/* 
-    <View style={styles.clickableIndicator}>
-      <Text style={styles.clickableText}>Tap for details</Text>
-      <Ionicons name="chevron-down" size={16} color="#999" />
-    </View>
-    */}
   </TouchableOpacity>
 );
 
@@ -98,6 +106,10 @@ const styles = StyleSheet.create({
   deleteButton: {
     padding: 8, // Make it easier to tap
     marginLeft: 8, // Space from scannedBadge or mealInfo
+  },
+  editButton: {
+    padding: 8, // Make it easier to tap
+    marginLeft: 8, // Space from deleteButton
   },
   caloriesRow: {
     flexDirection: 'row',
