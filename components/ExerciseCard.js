@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, TextInput, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import theme from '../styles/theme';
 
@@ -14,10 +14,17 @@ const ExerciseCard = ({
   onDeleteSet,
   onEditSet,
   onInputFocus,
+  iconSource,
 }) => (
   <View style={styles.card}>
     <View style={styles.cardRow}>
-      <Ionicons name="barbell-outline" size={24} color={theme.colors.primary} />
+      {iconSource && (
+        <Image
+          source={iconSource}
+          style={{ width: 70, height: 70, marginRight: 8 }}
+          resizeMode="contain"
+        />
+      )}
       <Text style={styles.cardTitle}>{item.exercise.Name}</Text>
       <TouchableOpacity onPress={() => onDelete(item.id)}>
         <Ionicons name="trash-outline" size={24} color={theme.colors.error} />

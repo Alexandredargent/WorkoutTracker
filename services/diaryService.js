@@ -166,3 +166,14 @@ export const updateWeightInDiary = async (userId, entryId, weightEntry) => {
     throw error;
   }
 };
+
+// Delete a meal entry
+export const deleteMealFromDiary = async (entryId) => {
+  try {
+    const entryRef = doc(db, 'diaryEntries', entryId);
+    await deleteDoc(entryRef);
+  } catch (error) {
+    console.error('Error deleting meal from diary:', error);
+    throw error;
+  }
+};

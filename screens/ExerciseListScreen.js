@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, SafeAreaView, StatusBar, ActivityIndicator, TextInput, StyleSheet, Modal } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, SafeAreaView, StatusBar, ActivityIndicator, TextInput, StyleSheet, Modal, Image } from 'react-native';
 import { fetchExercises, addUserExercise, fetchUserExercises } from '../services/firebaseExerciseService';
 import { addExerciseToDiary } from '../services/diaryService';
 import { auth } from '../services/firebase';
@@ -208,15 +208,32 @@ const ExerciseListScreen = ({ navigation, route }) => {
       alert('Failed to save exercise. Please try again.');
     }
   };
+  // Example: Map muscle group to PNG
+const muscleIcons = {
+
+  Abdominals: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Rectus Abdominus.png'),
+  Abductors: require('../assets/Backbodymuscles_EPS_PNG_SVG/PNG files/Gluteus medius.png'),
+  Adductors: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Adductor Longus and Pectineus.png'),
+  Back: require('../assets/Backbodymuscles_EPS_PNG_SVG/PNG files/Lattisimus dorsi.png'),
+  Biceps: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Biceps brachii.png'),
+  Calves: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Gastrocnemius (calf).png'),
+  Chest: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Pectoralis Major.png'),
+  Forearms: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Brachioradialis.png'),
+  Glutes: require('../assets/Backbodymuscles_EPS_PNG_SVG/PNG files/Gluteus maximus.png'),
+  Hamstrings: require('../assets/Backbodymuscles_EPS_PNG_SVG/PNG files/Biceps fermoris.png'),
+  "Hip Flexors": require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Sartorius.png'),
+  Neck: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Omohyoid.png'),
+  Quadriceps: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Rectus femoris.png'),
+  Shins: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Soleus.png'),
+  Shoulders: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Deltoids.png'),
+  Trapezius: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Trapezius.png'),
+  Triceps: require('../assets/Backbodymuscles_EPS_PNG_SVG/PNG files/Triceps Brachii ( long head, lateral head ).png'),
+  Default: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Body black outline with white background.png'),
+  // ...add all muscle groups
+};
+
   const renderExerciseItem = ({ item }) => {
-    let exerciseIcon;
-    if (item["Primary Exercise Classification"] === "Bodybuilding") {
-      exerciseIcon = <Ionicons name="barbell-outline" size={24} color={theme.colors.primary} style={styles.itemIcon} />;
-    } else if (item["Primary Exercise Classification"] === "Calisthenics") {
-      exerciseIcon = <Ionicons name="body-outline" size={24} color={theme.colors.primary} style={styles.itemIcon} />;
-    } else {
-      exerciseIcon = <Ionicons name="fitness-outline" size={24} color={theme.colors.primary} style={styles.itemIcon} />;
-    }
+    const iconSource = muscleIcons[item["Target Muscle Group"]] || muscleIcons.Default;
 
     return (
       <TouchableOpacity
@@ -224,7 +241,7 @@ const ExerciseListScreen = ({ navigation, route }) => {
         onPress={() => handleAddExercise(item)}
       >
         <View style={styles.itemContent}>
-          {exerciseIcon}
+          <Image source={iconSource} style={{ width: 80, height:80, marginRight: 12 }} resizeMode="contain" />
           <View style={styles.itemTextContainer}>
             <Text style={styles.itemText}>{item["Name"]}</Text>
             <View style={{ flexDirection: 'row', marginTop: 4 }}>

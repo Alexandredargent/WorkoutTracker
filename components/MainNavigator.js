@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import HomeScreen from '../screens/HomeScreen';
 import DiaryScreen from '../screens/DiaryScreen';
-import AddMealScreen from '../screens/AddMealScreen';
+
 import StatisticsScreen from '../screens/StatisticsScreen';
 import AccountScreen from '../screens/AccountScreen';
 import { signOut } from 'firebase/auth';
@@ -135,8 +135,7 @@ const MainNavigator = ({ user, setUser, navigation }) => {
             let iconName;
             if (route.name === 'Home') {
               iconName = focused ? 'home' : 'home-outline';
-            } else if (route.name === 'AddMeal') {
-              iconName = focused ? 'fast-food' : 'fast-food-outline';
+             
             } else if (route.name === 'Diary') {
               iconName = focused ? 'calendar' : 'calendar-outline';
             }
@@ -154,7 +153,7 @@ const MainNavigator = ({ user, setUser, navigation }) => {
       >
         <Tab.Screen name="Home" component={HomeScreen} />
         <Tab.Screen name="Diary" component={DiaryScreen} />
-        <Tab.Screen name="AddMeal" component={AddMealScreen} options={{ title: 'Meal' }} />
+        
         <Tab.Screen name="Statistics" component={StatisticsScreen} />
       </Tab.Navigator>
     </SafeAreaView>

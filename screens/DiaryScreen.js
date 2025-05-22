@@ -10,6 +10,7 @@ import {
   Alert,
   Modal,
   ScrollView,
+  Image,
 } from 'react-native';
 import Collapsible from 'react-native-collapsible';
 import { format, addDays, subDays } from 'date-fns';
@@ -21,6 +22,7 @@ import {
   deleteSetFromExercise,
   updateSetInExercise,
   deleteExerciseFromDiary,
+  deleteMealFromDiary, // Import the new function
   addWeightToDiary,
   updateWeightInDiary,
 } from '../services/diaryService.js';
@@ -269,6 +271,18 @@ const DiaryScreen = ({ navigation, route }) => {
     }
   };
 
+  // Delete meal from diary handler
+  const handleDeleteMeal = async (entryId) => {
+    try {
+      await deleteMealFromDiary(entryId);
+      setEntries((prevEntries) => prevEntries.filter(entry => entry.id !== entryId));
+      Alert.alert('Success', 'Meal deleted successfully.');
+    } catch (error) {
+      console.error('Error deleting meal:', error);
+      Alert.alert('Error', 'Failed to delete meal. Please try again.');
+    }
+  };
+
   // Open weight modal handler
   const handleOpenWeightModal = () => {
     const existingWeight = entries.find(entry => entry.weight !== undefined);
@@ -351,11 +365,12 @@ const DiaryScreen = ({ navigation, route }) => {
     Alert.alert('Meal pressed', `You pressed on ${item.mealName || item.name}`);
   };
 
-  // Render a single meal card
-  const renderMealItem = ({ item }) => (
+  // Render a single meal card (Note: This function was defined but not used.
+  // The rendering is done directly in the JSX map below. Keeping it here for reference
+  // but the actual change is in the map function).
+  const renderMealItem = (item) => (
     <MealCard
       key={item.id || item.mealName}
-      item={item}
       onPress={handleMealPress}
       // ...other props as needed
     />
@@ -481,22 +496,31 @@ const DiaryScreen = ({ navigation, route }) => {
                 </View>
                 <Collapsible collapsed={!activeSections.includes('exercise')}>
                   {entries.filter(entry => entry.exercise).length > 0 ? (
-                    entries.filter(entry => entry.exercise).map(item => (
-                      <ExerciseCard
-                        key={item.id || item.exercise.exerciseName}
-                        item={item}
-                        reps={reps}
-                        weight={weight}
-                        setReps={setReps}
-                        setWeight={setWeight}
-                        onAddSet={handleAddSet}
-                        onDelete={handleDeleteExercise}
-                        onDeleteSet={handleDeleteSet}
-                        onEditSet={handleEditSet}
-                        onInputFocus={handleExerciseInputFocus} // Pass this
-                        // ...other props as needed
-                      />
-                    ))
+                    entries.filter(entry => entry.exercise).map(item => {
+                      const iconSource = muscleIcons[item.exercise["Target Muscle Group"]] || muscleIcons.Default;
+                      return (
+                        <ExerciseCard
+                          key={item.id || item.exercise.exerciseName}
+                          item={item}
+                          reps={reps}
+                          weight={weight}
+                          setReps={setReps}
+                          setWeight={setWeight}
+                          onAddSet={handleAddSet}
+                          onDelete={handleDeleteExercise}
+                          onDeleteSet={handleDeleteSet}
+                          onEditSet={handleEditSet}
+                          onInputFocus={handleExerciseInputFocus}
+                          iconSource={iconSource} // <-- Add this line
+                          // ...other props as needed
+                        >
+                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                            <Image source={iconSource} style={{ width: 28, height: 28, marginRight: 12 }} resizeMode="contain" />
+                            <Text>{item.exercise.Name}</Text>
+                          </View>
+                        </ExerciseCard>
+                      );
+                    })
                   ) : (
                     <View style={styles.emptySection}>
                       <Text style={styles.emptySectionText}>No exercises logged for this day</Text>
@@ -535,6 +559,7 @@ const DiaryScreen = ({ navigation, route }) => {
                         key={item.id || item.mealName}
                         item={item}
                         onPress={handleMealPress}
+                        onDelete={() => handleDeleteMeal(item.id)} // Pass the delete handler
                         // ...other props as needed
                       />
                     ))
@@ -662,6 +687,27 @@ const DiaryScreen = ({ navigation, route }) => {
       </View>
     </SafeAreaView>
   );
+};
+
+const muscleIcons = {
+  Abdominals: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Rectus Abdominus.png'),
+  Abductors: require('../assets/Backbodymuscles_EPS_PNG_SVG/PNG files/Gluteus medius.png'),
+  Adductors: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Adductor Longus and Pectineus.png'),
+  Back: require('../assets/Backbodymuscles_EPS_PNG_SVG/PNG files/Lattisimus dorsi.png'),
+  Biceps: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Biceps brachii.png'),
+  Calves: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Gastrocnemius (calf).png'),
+  Chest: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Pectoralis Major.png'),
+  Forearms: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Brachioradialis.png'),
+  Glutes: require('../assets/Backbodymuscles_EPS_PNG_SVG/PNG files/Gluteus maximus.png'),
+  Hamstrings: require('../assets/Backbodymuscles_EPS_PNG_SVG/PNG files/Biceps fermoris.png'),
+  "Hip Flexors": require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Sartorius.png'),
+  Neck: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Omohyoid.png'),
+  Quadriceps: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Rectus femoris.png'),
+  Shins: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Soleus.png'),
+  Shoulders: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Deltoids.png'),
+  Trapezius: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Trapezius.png'),
+  Triceps: require('../assets/Backbodymuscles_EPS_PNG_SVG/PNG files/Triceps Brachii ( long head, lateral head ).png'),
+  Default: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Body black outline with white background.png'),
 };
 
 const styles = StyleSheet.create({

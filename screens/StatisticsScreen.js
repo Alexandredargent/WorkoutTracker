@@ -10,6 +10,7 @@ const StatisticsScreen = () => {
   const [totalWorkouts, setTotalWorkouts] = useState(0);
   const [mostFrequentExercises, setMostFrequentExercises] = useState([]);
   const [weightHistory, setWeightHistory] = useState([]);
+  const [mostTargetedMuscleGroups, setMostTargetedMuscleGroups] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
@@ -20,6 +21,7 @@ const StatisticsScreen = () => {
         const stats = await fetchStatistics(user.uid);
         setTotalWorkouts(stats.totalWorkouts);
         setMostFrequentExercises(stats.mostFrequentExercises);
+        setMostTargetedMuscleGroups(stats.mostTargetedMuscleGroups);
         const weightData = await fetchWeightHistory(user.uid);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -109,6 +111,20 @@ const StatisticsScreen = () => {
           ))
         ) : (
           <Text style={styles.emptyText}>Keep logging workouts to see your favorites here!</Text>
+        )}
+      </View>
+
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Most Targeted Muscle Groups</Text>
+        {mostTargetedMuscleGroups.length > 0 ? (
+          mostTargetedMuscleGroups.map((item, idx) => (
+            <View key={idx} style={styles.exerciseCard}>
+              <Text style={styles.exerciseName}>{item.group}</Text>
+              <Text style={styles.exerciseCount}>{item.count} times</Text>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.emptyText}>No muscle group data yet!</Text>
         )}
       </View>
 

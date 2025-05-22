@@ -7,15 +7,12 @@ export const fetchStatistics = async (userId) => {
     const snapshot = await getDocs(q);
     const entries = snapshot.docs.map(doc => doc.data());
 
-    console.log('User ID being queried:', userId);
-    console.log('Number of documents found:', snapshot.docs.length);
-    console.log('Raw entries:', entries);
-
     const totalWorkouts = entries.length;
 
+    // Most frequent exercises
     const exerciseCounts = {};
     entries.forEach(entry => {
-      if (entry.exercise && entry.exercise.Name) { // Access nested Name
+      if (entry.exercise && entry.exercise.Name) {
         if (!exerciseCounts[entry.exercise.Name]) {
           exerciseCounts[entry.exercise.Name] = 0;
         }
@@ -23,10 +20,25 @@ export const fetchStatistics = async (userId) => {
       }
     });
 
-    console.log('Exercise counts:', exerciseCounts);
-
     const mostFrequentExercises = Object.keys(exerciseCounts)
       .map(name => ({ name, count: exerciseCounts[name] }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+
+    // Most targeted muscle groups
+    const muscleGroupCounts = {};
+    entries.forEach(entry => {
+      const group = entry.exercise && entry.exercise["Target Muscle Group"];
+      if (group) {
+        if (!muscleGroupCounts[group]) {
+          muscleGroupCounts[group] = 0;
+        }
+        muscleGroupCounts[group]++;
+      }
+    });
+
+    const mostTargetedMuscleGroups = Object.keys(muscleGroupCounts)
+      .map(group => ({ group, count: muscleGroupCounts[group] }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
@@ -34,7 +46,7 @@ export const fetchStatistics = async (userId) => {
       .filter(entry => entry.weight)
       .map(entry => entry.weight);
 
-    return { totalWorkouts, mostFrequentExercises, weightProgress };
+    return { totalWorkouts, mostFrequentExercises, mostTargetedMuscleGroups, weightProgress };
   } catch (error) {
     console.error('Error fetching statistics:', error);
     throw error;
