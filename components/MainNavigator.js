@@ -5,11 +5,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { BlurView } from 'expo-blur';
 import HomeScreen from '../screens/HomeScreen';
 import DiaryScreen from '../screens/DiaryScreen';
-
 import StatisticsScreen from '../screens/StatisticsScreen';
 import AccountScreen from '../screens/AccountScreen';
+import MessagesScreen from '../screens/MessagesScreen';
+import ChatScreen from '../screens/ChatScreen';
+import NotificationScreen from '../screens/NotificationScreen';
 import { signOut } from 'firebase/auth';
-import { auth } from '../services/firebase';
+import { auth, db } from '../services/firebase';
+import { onSnapshot, collection, query, where } from 'firebase/firestore';
 import theme from '../styles/theme';
 
 const Tab = createBottomTabNavigator();
@@ -17,6 +20,7 @@ const { width } = Dimensions.get('window');
 
 const MainNavigator = ({ user, setUser, navigation }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [hasPendingRequests, setHasPendingRequests] = useState(false);
   const menuAnimation = useRef(new Animated.Value(0)).current;
 
   const toggleMenu = () => {
@@ -56,6 +60,25 @@ const MainNavigator = ({ user, setUser, navigation }) => {
     return unsubscribe;
   }, [navigation]);
 
+  useEffect(() => {
+    const userId = auth.currentUser?.uid;
+    if (!userId) return;
+    const q = query(
+      collection(db, 'friendRequests'),
+      where('recipientId', '==', userId),
+      where('status', '==', 'pending')
+    );
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setHasPendingRequests(!snapshot.empty);
+    });
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    setIsMenuOpen(false);
+    menuAnimation.setValue(0);
+  }, []);
+
   const panResponder = PanResponder.create({
     onMoveShouldSetPanResponder: (evt, gestureState) => {
       return isMenuOpen && gestureState.dx > 0;
@@ -88,12 +111,19 @@ const MainNavigator = ({ user, setUser, navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.notificationIcon} onPress={() => {/* Handle notification press */}}>
+        <TouchableOpacity
+          style={styles.notificationIcon}
+          onPress={() => navigation.navigate('NotificationScreen')}
+        >
           <Ionicons name="notifications-outline" size={30} color={theme.colors.primary} />
+          {hasPendingRequests && (
+            <View style={styles.notificationDot} />
+          )}
         </TouchableOpacity>
         <TouchableOpacity style={styles.menuIcon} onPress={toggleMenu}>
           <Ionicons name={isMenuOpen ? "close" : "menu"} size={30} color={theme.colors.primary} />
         </TouchableOpacity>
+        
       </View>
 
       {isMenuOpen && (
@@ -105,7 +135,7 @@ const MainNavigator = ({ user, setUser, navigation }) => {
           <BlurView intensity={100} style={StyleSheet.absoluteFill} />
         </TouchableOpacity>
       )}
-
+      {/* side menu */}
       <Animated.View
         style={[
           styles.menuContainer,
@@ -129,18 +159,19 @@ const MainNavigator = ({ user, setUser, navigation }) => {
         </View>
       </Animated.View>
 
+      {/* bottom tab navigation */}
       <Tab.Navigator
         screenOptions={({ route }) => ({
           tabBarIcon: ({ focused, color, size }) => {
             let iconName;
             if (route.name === 'Home') {
               iconName = focused ? 'home' : 'home-outline';
-             
             } else if (route.name === 'Diary') {
               iconName = focused ? 'calendar' : 'calendar-outline';
-            }
-            else if (route.name === 'Statistics') {
+            } else if (route.name === 'Statistics') {
               iconName = focused ? 'stats-chart' : 'stats-chart-outline';
+            } else if (route.name === 'Messages') {
+              iconName = focused ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline';
             }
             return <Ionicons name={iconName} size={size} color={color} />;
           },
@@ -155,6 +186,7 @@ const MainNavigator = ({ user, setUser, navigation }) => {
         <Tab.Screen name="Diary" component={DiaryScreen} />
         
         <Tab.Screen name="Statistics" component={StatisticsScreen} />
+        <Tab.Screen name="Messages" component={MessagesScreen} />
       </Tab.Navigator>
     </SafeAreaView>
   );
@@ -178,6 +210,9 @@ const styles = StyleSheet.create({
     marginLeft: 15,
   },
   notificationIcon: {},
+  messageIcon: {
+    marginLeft: 15,
+  },
   menuContainer: {
     position: 'absolute',
     top: 0,
@@ -213,6 +248,15 @@ const styles = StyleSheet.create({
   tabBarLabel: {
     fontSize: 12,
     fontWeight: '600',
+  },
+  notificationDot: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: 'red',
   },
 });
 

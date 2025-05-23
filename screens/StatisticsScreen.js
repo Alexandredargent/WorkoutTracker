@@ -89,7 +89,7 @@ const StatisticsScreen = () => {
 
   return (
     <ScrollView style={styles.container}>
-      <Text style={styles.title}>Statistics</Text>
+      
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Total Workouts</Text>

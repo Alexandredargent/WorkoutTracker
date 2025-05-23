@@ -11,6 +11,9 @@ import AccountScreen from './screens/AccountScreen';
 import ExerciseListScreen from './screens/ExerciseListScreen';
 import MealListScreen from './screens/MealListScreen';
 import BarcodeScannerScreen from './screens/BarcodeScannerScreen';
+import MessagesScreen from './screens/MessagesScreen';
+import NotificationScreen from './screens/NotificationScreen';
+import ChatScreen from './screens/ChatScreen';
 import { auth } from './services/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
@@ -84,6 +87,21 @@ export default function App() {
                     name="BarcodeScannerScreen" 
                     component={BarcodeScannerScreen} 
                     options={{ title: 'Barcode Scanner' }}
+                />
+                <Stack.Screen 
+                    name="MessagesScreen" 
+                    component={MessagesScreen} 
+                    options={{ title: 'Messages' }}
+                />
+                <Stack.Screen 
+                    name="NotificationScreen" 
+                    component={NotificationScreen} 
+                    options={{ title: 'Notification' }}
+                />
+                <Stack.Screen 
+                    name="ChatScreen" 
+                    component={ChatScreen} 
+                    options={{ title: 'Chat' }}
                 />
             </Stack.Navigator>
         </NavigationContainer>

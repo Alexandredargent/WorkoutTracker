@@ -82,7 +82,7 @@ const DiaryScreen = ({ navigation, route }) => {
       pan.setOffset({ x: pan.x._value, y: pan.y._value });
       pan.setValue({ x: 0, y: 0 });
     },
-    onPanResponderMove: Animated.event([null, { dx: pan.x }], { useNativeDriver: false }),
+    onPanResponderMove: Animated.event([null, { dx: pan.x }], { useNativeDriver: true }),
     onPanResponderRelease: (_, gestureState) => {
       pan.flattenOffset();
       let newDate;
@@ -93,7 +93,7 @@ const DiaryScreen = ({ navigation, route }) => {
         newDate = addDays(selectedDate, 1);
         animatePageChange(newDate, -width);
       } else {
-        Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: false, friction: 5 }).start();
+        Animated.spring(pan, { toValue: { x: 0, y: 0 }, useNativeDriver: true, friction: 5 }).start();
       }
     },
   });
@@ -101,15 +101,15 @@ const DiaryScreen = ({ navigation, route }) => {
   // Animate page transition when changing date
   const animatePageChange = (newDate, toValue) => {
     Animated.parallel([
-      Animated.timing(pan.x, { toValue: toValue, duration: 400, useNativeDriver: false }),
-      Animated.timing(opacity, { toValue: 0, duration: 400, useNativeDriver: false }),
+      Animated.timing(pan.x, { toValue: toValue, duration: 400, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 0, duration: 400, useNativeDriver: true }),
     ]).start(() => {
       handleDateChange(newDate);
       setShouldFetch(true);
       pan.setValue({ x: -toValue, y: 0 });
       Animated.parallel([
-        Animated.spring(pan.x, { toValue: 0, useNativeDriver: false, friction: 8 }),
-        Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: false }),
+        Animated.spring(pan.x, { toValue: 0, useNativeDriver: true, friction: 8 }),
+        Animated.timing(opacity, { toValue: 1, duration: 200, useNativeDriver: true }),
       ]).start();
     });
   };
