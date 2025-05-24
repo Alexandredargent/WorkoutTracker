@@ -22,7 +22,8 @@ const GoalScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigation = useNavigation();
   const route = useRoute();
-  const { username, email, password, weight, height, age } = route.params;
+  const { username, email, password, weight, height, dateOfBirth } = route.params;
+ 
 
   const GOAL_OPTIONS = [
     { id: 'lose', label: 'Lose Weight', value: 'lose_weight' },
@@ -54,7 +55,7 @@ const GoalScreen = () => {
       batch.set(userRef, {
         username: username.toLowerCase(),
         email: user.email,
-        age: parseInt(age),
+        dateOfBirth, // ADD THIS (should be a string like '1990-05-24')
         height: parseInt(height),
         weight: parseFloat(weight),
         goal,

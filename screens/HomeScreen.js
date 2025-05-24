@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import { auth, db } from '../services/firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
@@ -9,16 +9,23 @@ import {
   getLipidGoal,
   getCarbGoal
 } from '../utils/nutrition';
-import theme from '../styles/theme';
-import { useFocusEffect } from '@react-navigation/native';
-import { useCallback } from 'react';
-import NutritionSummary from '../components/NutritionSummary';
 
+
+import { useFocusEffect } from '@react-navigation/native';
+import NutritionSummary from '../components/NutritionSummary';
+import { calculateAge } from '../utils/date';
+import theme from '../styles/theme';
 const HomeScreen = () => {
+
   const [userInfo, setUserInfo] = useState(null);
   const [calorieTarget, setCalorieTarget] = useState(null);
   const [loading, setLoading] = useState(true);
   const [entries, setEntries] = useState([]);
+
+  // --- STEPS LOGIC (commented out) ---
+  // import { Pedometer } from 'expo-sensors';
+  // const [stepCount, setStepCount] = useState(0);
+  // --- END STEPS LOGIC ---
 
   const getGoalLabel = (goal) => {
     switch (goal) {
@@ -42,8 +49,13 @@ const HomeScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
-      const fetchUserInfo = async () => {
+      let isMounted = true;
+      let subscription;
+
+      const fetchAll = async () => {
+        setLoading(true);
         try {
+          // Fetch user info
           const user = auth.currentUser;
           if (!user) return;
 
@@ -55,7 +67,7 @@ const HomeScreen = () => {
             setUserInfo(data);
 
             const target = calculateCalorieTarget({
-              age: data.age,
+              age: calculateAge(data.dateOfBirth), // ✅ USE CALCULATED AGE
               height: data.height,
               weight: data.weight,
               gender: data.gender,
@@ -65,37 +77,58 @@ const HomeScreen = () => {
 
             setCalorieTarget(target);
           }
+          /*
+          // Fetch today's diary entries
+          const today = new Date();
+          const yyyy = today.getFullYear();
+          const mm = String(today.getMonth() + 1).padStart(2, '0');
+          const dd = String(today.getDate()).padStart(2, '0');
+          const todayStr = `${yyyy}-${mm}-${dd}`;
+          const q = query(
+            collection(db, 'diaryEntries'),
+            where('userId', '==', user.uid),
+            where('date', '==', todayStr)
+          );
+          const snapshot = await getDocs(q);
+          setEntries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
+          // --- STEPS LOGIC (commented out) ---
+          // Fetch today's steps
+          const end = new Date();
+          const start = new Date();
+          start.setHours(0, 0, 0, 0);
+          try {
+            const result = await Pedometer.getStepCountAsync(start, end);
+            if (isMounted) setStepCount(result.steps);
+          } catch (e) {
+            if (isMounted) setStepCount(0);
+          }
+
+          // Live step updates while focused
+          Pedometer.isAvailableAsync().then((result) => {
+            if (result) {
+              subscription = Pedometer.watchStepCount(() => {
+                fetchAll(); // re-fetch everything on new step
+              });
+            }
+          });
+          // --- END STEPS LOGIC ---
+            */
         } catch (err) {
-          console.error('Error fetching user data:', err);
+          console.error('Error fetching data:', err);
         } finally {
           setLoading(false);
         }
       };
 
-      fetchUserInfo();
+      fetchAll();
+
+      return () => {
+        isMounted = false;
+        if (subscription) subscription.remove();
+      };
     }, [])
   );
-
-  // Fetch today's diary entries:
-  useEffect(() => {
-    const fetchEntries = async () => {
-      const user = auth.currentUser;
-      if (!user) return;
-      const today = new Date();
-      const yyyy = today.getFullYear();
-      const mm = String(today.getMonth() + 1).padStart(2, '0');
-      const dd = String(today.getDate()).padStart(2, '0');
-      const todayStr = `${yyyy}-${mm}-${dd}`;
-      const q = query(
-        collection(db, 'diaryEntries'),
-        where('userId', '==', user.uid),
-        where('date', '==', todayStr)
-      );
-      const snapshot = await getDocs(q);
-      setEntries(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    };
-    fetchEntries();
-  }, []);
 
   // Find weight entry for the day
   const weightEntry = entries.find(entry => entry.weight !== undefined);
@@ -104,7 +137,11 @@ const HomeScreen = () => {
   const proteinGoal = getProteinGoal(currentWeight);
   const lipidGoal = getLipidGoal(currentWeight);
   const calorieGoal = userInfo
-    ? calculateCalorieTarget({ ...userInfo, weight: currentWeight })
+    ? calculateCalorieTarget({
+        ...userInfo,
+        age: calculateAge(userInfo.dateOfBirth), // <-- use calculated age!
+        weight: currentWeight,
+      })
     : 0;
   const carbGoal = getCarbGoal(calorieGoal, proteinGoal, lipidGoal);
 
@@ -131,8 +168,10 @@ const HomeScreen = () => {
       {userInfo && (
         <>
           <Text style={styles.goalText}>🎯 Goal: {getGoalLabel(userInfo.goal)}</Text>
-          
           <Text style={styles.goalText}>⚡ Activity Level: {getActivityLabel(userInfo.activityLevel)}</Text>
+          {/*
+          <Text style={styles.goalText}>👣 Steps Today: {stepCount}</Text>
+          */}
         </>
       )}
       <NutritionSummary

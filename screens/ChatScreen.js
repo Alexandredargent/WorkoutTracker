@@ -2,12 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { View, TextInput, Button, FlatList, Text, StyleSheet } from 'react-native';
 import { db, auth } from '../services/firebase';
 import { collection, addDoc, query, orderBy, onSnapshot } from 'firebase/firestore';
-import theme from '../styles/theme';
 
+import theme from '../styles/theme';
 const ChatScreen = ({ route }) => {
   const { chatId } = route.params;
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
+  
 
   useEffect(() => {
     const q = query(

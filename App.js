@@ -17,10 +17,12 @@ import ChatScreen from './screens/ChatScreen';
 import { auth } from './services/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
+
 const Stack = createNativeStackNavigator();
 
 export default function App() {
     const [user, setUser] = useState(null);
+   
 
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -30,81 +32,83 @@ export default function App() {
     }, []);
 
     return (
-        <NavigationContainer>
-            <Stack.Navigator 
-                initialRouteName={user ? "Main" : "Login"}
-                screenOptions={{
-                    animation: 'fade',
-                    animationDuration: 300,
-                }}
-            >
-                <Stack.Screen 
-                    name="Login" 
-                    options={{ headerShown: false }} 
+        
+            <NavigationContainer>
+                <Stack.Navigator 
+                    initialRouteName={user ? "Main" : "Login"}
+                    screenOptions={{
+                        animation: 'fade',
+                        animationDuration: 300,
+                    }}
                 >
-                    {props => <LoginScreen {...props} setUser={setUser} />} 
-                </Stack.Screen>
-                <Stack.Screen 
-                    name="SignUp" 
-                    options={{ headerShown: false }} 
-                >
-                    {props => <SignUpScreen {...props} setUser={setUser} />}
-                </Stack.Screen>
-                <Stack.Screen 
-                    name="FitnessProfileScreen" 
-                    component={FitnessProfileScreen} 
-                    options={{ 
-                        headerShown: false,
-                        animation: Platform.OS === 'ios' ? 'default' : 'none'
-                    }} 
-                />
-                <Stack.Screen 
-                    name="GoalScreen" 
-                    component={GoalScreen} 
-                    options={{ title: 'Set Your Goal', headerShown: false }} 
-                />
-                <Stack.Screen 
-                    name="Main" 
-                    component={MainNavigator} 
-                    options={{ headerShown: false }} 
-                />        
-                <Stack.Screen 
-                    name="Account" 
-                    component={AccountScreen} 
-                    options={{ title: 'Account Settings' }} 
-                />
-                <Stack.Screen 
-                    name="ExerciseListScreen" 
-                    component={ExerciseListScreen} 
-                    options={{ title: 'Exercises' }}
-                />
-                <Stack.Screen 
-                    name="MealListScreen" 
-                    component={MealListScreen} 
-                    options={{ title: 'Meals' }}
-                />
-                <Stack.Screen 
-                    name="BarcodeScannerScreen" 
-                    component={BarcodeScannerScreen} 
-                    options={{ title: 'Barcode Scanner' }}
-                />
-                <Stack.Screen 
-                    name="MessagesScreen" 
-                    component={MessagesScreen} 
-                    options={{ title: 'Messages' }}
-                />
-                <Stack.Screen 
-                    name="NotificationScreen" 
-                    component={NotificationScreen} 
-                    options={{ title: 'Notification' }}
-                />
-                <Stack.Screen 
-                    name="ChatScreen" 
-                    component={ChatScreen} 
-                    options={{ title: 'Chat' }}
-                />
-            </Stack.Navigator>
-        </NavigationContainer>
+                    <Stack.Screen 
+                        name="Login" 
+                        options={{ headerShown: false }} 
+                    >
+                        {props => <LoginScreen {...props} setUser={setUser} />} 
+                    </Stack.Screen>
+                    <Stack.Screen 
+                        name="SignUp" 
+                        options={{ headerShown: false }} 
+                    >
+                        {props => <SignUpScreen {...props} setUser={setUser} />}
+                    </Stack.Screen>
+                    <Stack.Screen 
+                        name="FitnessProfileScreen" 
+                        component={FitnessProfileScreen} 
+                        options={{ 
+                            headerShown: false,
+                            animation: Platform.OS === 'ios' ? 'default' : 'none'
+                        }} 
+                    />
+                    <Stack.Screen 
+                        name="GoalScreen" 
+                        component={GoalScreen} 
+                        options={{ title: 'Set Your Goal', headerShown: false }} 
+                    />
+                    <Stack.Screen 
+                        name="Main" 
+                        component={MainNavigator} 
+                        options={{ headerShown: false }} 
+                    />        
+                    <Stack.Screen 
+                        name="Account" 
+                        component={AccountScreen} 
+                        options={{ title: 'Account Settings' }} 
+                    />
+                    <Stack.Screen 
+                        name="ExerciseListScreen" 
+                        component={ExerciseListScreen} 
+                        options={{ title: 'Exercises' }}
+                    />
+                    <Stack.Screen 
+                        name="MealListScreen" 
+                        component={MealListScreen} 
+                        options={{ title: 'Meals' }}
+                    />
+                    <Stack.Screen 
+                        name="BarcodeScannerScreen" 
+                        component={BarcodeScannerScreen} 
+                        options={{ title: 'Barcode Scanner' }}
+                    />
+                    <Stack.Screen 
+                        name="MessagesScreen" 
+                        component={MessagesScreen} 
+                        options={{ title: 'Messages' }}
+                    />
+                    <Stack.Screen 
+                        name="NotificationScreen" 
+                        component={NotificationScreen} 
+                        options={{ title: 'Notification' }}
+                    />
+                    <Stack.Screen 
+                        name="ChatScreen" 
+                        component={ChatScreen} 
+                        options={{ title: 'Chat' }}
+                    />
+                    
+                </Stack.Navigator>
+            </NavigationContainer>
+       
     );
 }
-

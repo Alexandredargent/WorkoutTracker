@@ -44,6 +44,8 @@ import WeightCard from '../components/WeightCard';
 import NutritionSummary from '../components/NutritionSummary';
 import theme from '../styles/theme';
 import { Button } from 'react-native';
+import { calculateAge } from '../utils/date';
+
 
 const { width } = Dimensions.get('window');
 
@@ -167,25 +169,24 @@ const DiaryScreen = ({ navigation, route }) => {
     }
   }, [route.params?.exercise, navigation, selectedDate]);
 
-  // Fetch user info and set calorie goal on mount
-  useEffect(() => {
-    const fetchUserInfo = async () => {
-      try {
-        const user = auth.currentUser;
-        if (!user) return;
-        const docRef = doc(db, 'users', user.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          setUserInfo(data);
-          // REMOVE setCalorieGoal here!
+  useFocusEffect(
+    useCallback(() => {
+      const fetchUserInfo = async () => {
+        try {
+          const user = auth.currentUser;
+          if (!user) return;
+          const docRef = doc(db, 'users', user.uid);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            setUserInfo(docSnap.data());
+          }
+        } catch (err) {
+          console.error('Error fetching user data:', err);
         }
-      } catch (err) {
-        console.error('Error fetching user data:', err);
-      }
-    };
-    fetchUserInfo();
-  }, []);
+      };
+      fetchUserInfo();
+    }, [])
+  );
 
   // Update calorie goal when weight entry changes
   useEffect(() => {
@@ -423,7 +424,11 @@ const DiaryScreen = ({ navigation, route }) => {
   const lipidGoal = getLipidGoal(currentWeight);
 
   const calorieGoal = userInfo
-    ? calculateCalorieTarget({ ...userInfo, weight: currentWeight })
+    ? calculateCalorieTarget({
+        ...userInfo,
+        age: calculateAge(userInfo.dateOfBirth),
+        weight: currentWeight,
+      })
     : 0;
 
   const carbGoal = getCarbGoal(calorieGoal, proteinGoal, lipidGoal);

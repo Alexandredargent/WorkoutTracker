@@ -13,15 +13,18 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import theme from '../styles/theme';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const FitnessProfileScreen = () => {
+ 
   const [weight, setWeight] = useState('');
   const [height, setHeight] = useState('');
-  const [age, setAge] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
   const [gender, setGender] = useState('');
   const [activityLevel, setActivityLevel] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const navigation = useNavigation();
   const route = useRoute();
   const { username, email, password } = route.params;
@@ -44,7 +47,7 @@ const FitnessProfileScreen = () => {
   }, []);
 
   const handleNext = () => {
-    if (!weight || !height || !age || !gender || !activityLevel) {
+    if (!weight || !height || !dateOfBirth || !gender || !activityLevel) {
       setError('Please fill in all fields');
       return;
     }
@@ -55,7 +58,7 @@ const FitnessProfileScreen = () => {
       password,
       weight,
       height,
-      age,
+      dateOfBirth,
       gender,
       activityLevel
     });
@@ -90,7 +93,7 @@ const FitnessProfileScreen = () => {
               ))}
             </View>
 
-            {/* Weight, Height, Age */}
+            {/* Weight, Height, Date of Birth */}
             <TextInput
               placeholder="Weight (kg)"
               value={weight}
@@ -107,14 +110,25 @@ const FitnessProfileScreen = () => {
               keyboardType="numeric"
               maxLength={3}
             />
-            <TextInput
-              placeholder="Age"
-              value={age}
-              onChangeText={text => setAge(text.replace(/[^0-9]/g, ''))}
-              style={styles.input}
-              keyboardType="numeric"
-              maxLength={3}
-            />
+            <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.input}>
+              <Text style={{ color: dateOfBirth ? theme.colors.text : '#888' }}>
+                {dateOfBirth ? dateOfBirth : 'Date of Birth'}
+              </Text>
+            </TouchableOpacity>
+            {showDatePicker && (
+              <DateTimePicker
+                value={dateOfBirth ? new Date(dateOfBirth) : new Date(2000, 0, 1)}
+                mode="date"
+                display="default"
+                onChange={(event, selectedDate) => {
+                  setShowDatePicker(false);
+                  if (selectedDate) {
+                    setDateOfBirth(selectedDate.toISOString().split('T')[0]);
+                  }
+                }}
+                maximumDate={new Date()}
+              />
+            )}
 
             {/* Activity Level */}
             <Text style={styles.label}>Activity Level</Text>
