@@ -1,4 +1,4 @@
-import { collection, getDocs, addDoc, query, orderBy, limit, startAfter } from 'firebase/firestore';
+import { collection, getDocs, addDoc, query, orderBy, limit, startAfter, doc, deleteDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
 // Fetch global meals (unchanged)
@@ -49,6 +49,17 @@ export const fetchUserMeals = async (userId, limitCount = 50, startAfterDoc = nu
     return mealList;
   } catch (error) {
     console.error('Error fetching user meals:', error);
+    throw error;
+  }
+};
+
+// Delete meal from user's private collection
+export const deleteUserMeal = async (userId, mealId) => {
+  try {
+    const mealDoc = doc(db, 'users', userId, 'meals', mealId);
+    await deleteDoc(mealDoc);
+  } catch (error) {
+    console.error('Error deleting user meal:', error);
     throw error;
   }
 };

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, SafeAreaView, StatusBar, ActivityIndicator, StyleSheet } from 'react-native';
-import { fetchMeals, addUserMeal, fetchUserMeals } from '../services/firebaseMealService.js';
+import { View, Text, FlatList, TouchableOpacity, SafeAreaView, StatusBar, ActivityIndicator, StyleSheet, Alert } from 'react-native';
+import { fetchMeals, addUserMeal, fetchUserMeals, deleteUserMeal } from '../services/firebaseMealService.js';
 import { addMealToDiary } from '../services/diaryService';
 import { auth } from '../services/firebase';
 import { Ionicons } from '@expo/vector-icons';
@@ -84,25 +84,59 @@ const MealListScreen = ({ navigation, route }) => {
     }
   };
 
-  const renderMealItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.item}
-      onPress={() => handleAddMeal(item)}
-    >
-      <View style={styles.itemContent}>
-        <Ionicons name="restaurant-outline" size={24} color={theme.colors.primary} style={styles.itemIcon} />
-        <View style={styles.itemTextContainer}>
-          <Text style={styles.itemText}>{item.name}</Text>
-          <Text style={styles.caloriesText}>{item.calories} calories</Text>
-          <Text style={styles.caloriesText}>{item.carbs} carbs</Text>
-          <Text style={styles.caloriesText}>{item.lipids} lipids</Text>
-          <Text style={styles.caloriesText}>{item.proteins} proteins</Text>
-          {item.isPopular && <Text style={styles.popularTag}>Popular</Text>}
+  const renderMealItem = ({ item }) => {
+    const user = auth.currentUser;
+    const isCreatedByUser = item.uid === user?.uid;
+
+    const handleDelete = () => {
+      Alert.alert(
+        "Delete Meal",
+        "Are you sure you want to delete this meal?",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                await deleteUserMeal(user.uid, item.id);
+                setMeals(prev => prev.filter(meal => meal.id !== item.id));
+              } catch (error) {
+                alert('Failed to delete meal.');
+              }
+            }
+          }
+        ]
+      );
+    };
+
+    return (
+      <TouchableOpacity
+        style={styles.item}
+        onPress={() => handleAddMeal(item)}
+      >
+        <View style={styles.itemContent}>
+          <Ionicons name="restaurant-outline" size={24} color={theme.colors.primary} style={styles.itemIcon} />
+          <View style={styles.itemTextContainer}>
+            <Text style={styles.itemText}>{item.name}</Text>
+            <Text style={styles.caloriesText}>{item.calories} calories</Text>
+            <Text style={styles.caloriesText}>{item.carbs} carbs</Text>
+            <Text style={styles.caloriesText}>{item.lipids} lipids</Text>
+            <Text style={styles.caloriesText}>{item.proteins} proteins</Text>
+            {item.isPopular && <Text style={styles.popularTag}>Popular</Text>}
+          </View>
         </View>
-      </View>
-      <Ionicons name="add-circle-outline" size={24} color={theme.colors.primary} />
-    </TouchableOpacity>
-  );
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Ionicons name="add-circle-outline" size={24} color={theme.colors.primary} />
+          {isCreatedByUser && (
+            <TouchableOpacity onPress={handleDelete} style={{ marginLeft: 12 }}>
+              <Ionicons name="trash-outline" size={24} color="red" />
+            </TouchableOpacity>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
   
   const renderTabButton = (tabName, label) => (
     <TouchableOpacity 
@@ -224,11 +258,8 @@ if (user) {
       />
     </SafeAreaView>
   );
-
-
-
-
 };
+
 
 const styles = StyleSheet.create({
   container: {

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, SafeAreaView, StatusBar, ActivityIndicator, TextInput, StyleSheet, Modal, Image } from 'react-native';
-import { fetchExercises, addUserExercise, fetchUserExercises } from '../services/firebaseExerciseService';
+import { View, Text, FlatList, TouchableOpacity, SafeAreaView, StatusBar, ActivityIndicator, TextInput, StyleSheet, Modal, Image, Alert } from 'react-native';
+import { fetchExercises, addUserExercise, fetchUserExercises, deleteUserExercise } from '../services/firebaseExerciseService';
 import { addExerciseToDiary } from '../services/diaryService';
 import { auth } from '../services/firebase';
 import { Ionicons } from '@expo/vector-icons'; // Ionicons is imported
@@ -234,6 +234,30 @@ const muscleIcons = {
 
   const renderExerciseItem = ({ item }) => {
     const iconSource = muscleIcons[item["Target Muscle Group"]] || muscleIcons.Default;
+    const user = auth.currentUser;
+    const isCreatedByUser = item.uid === user?.uid;
+
+    const handleDelete = () => {
+      Alert.alert(
+        "Delete Exercise",
+        "Are you sure you want to delete this exercise?",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: async () => {
+              try {
+                await deleteUserExercise(user.uid, item.id);
+                setExercises(prev => prev.filter(ex => ex.id !== item.id));
+              } catch (error) {
+                alert('Failed to delete exercise.');
+              }
+            }
+          }
+        ]
+      );
+    };
 
     return (
       <TouchableOpacity
@@ -269,7 +293,14 @@ const muscleIcons = {
             </View>
           </View>
         </View>
-        <Ionicons name="add-circle-outline" size={24} color={theme.colors.primary} />
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Ionicons name="add-circle-outline" size={24} color={theme.colors.primary} />
+          {isCreatedByUser && (
+            <TouchableOpacity onPress={handleDelete} style={{ marginLeft: 12 }}>
+              <Ionicons name="trash-outline" size={24} color="red" />
+            </TouchableOpacity>
+          )}
+        </View>
       </TouchableOpacity>
     );
   };

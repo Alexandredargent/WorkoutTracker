@@ -1,4 +1,4 @@
-import { collection, getDocs, query, limit, startAfter, orderBy, addDoc } from 'firebase/firestore';
+import { collection, getDocs, query, limit, startAfter, orderBy, addDoc, doc, deleteDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
 export const fetchExercises = async (limitCount = 50, startAfterDoc = null) => {
@@ -69,6 +69,16 @@ export const fetchUserExercises = async (userId, limitCount = 50, startAfterDoc 
     return { exerciseList, lastDoc: exerciseSnapshot.docs[exerciseSnapshot.docs.length - 1] };
   } catch (error) {
     console.error('Error fetching user exercises:', error);
+    throw error;
+  }
+};
+
+export const deleteUserExercise = async (userId, exerciseId) => {
+  try {
+    const exerciseDoc = doc(db, 'users', userId, 'exercises', exerciseId);
+    await deleteDoc(exerciseDoc);
+  } catch (error) {
+    console.error('Error deleting user exercise:', error);
     throw error;
   }
 };
