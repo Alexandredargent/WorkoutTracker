@@ -4,18 +4,18 @@ import {
   query, 
   where, 
   getDocs, 
-  updateDoc, 
+  updateDoc as updateFirestoreDoc, // Alias updateDoc
   arrayUnion, 
   arrayRemove, 
   doc, 
-  deleteDoc 
+  deleteDoc
 } from 'firebase/firestore';
 import { db } from './firebase';
 
 // Add a new exercise entry
 export const addExerciseToDiary = async (userId, date, exercise) => {
   try {
-    const docRef = await addDoc(collection(db, 'diaryEntries'), {
+    const docRef = await addDoc(collection(db, 'users', userId, 'diaryEntries'), {
       userId: userId,
       date: date,
       exercise: exercise,
@@ -31,7 +31,7 @@ export const addExerciseToDiary = async (userId, date, exercise) => {
 export const fetchDiaryEntriesForDate = async (userId, date) => {
   try {
     const q = query(
-      collection(db, 'diaryEntries'), 
+      collection(db, 'users', userId, 'diaryEntries'), 
       where('userId', '==', userId),
       where('date', '==', date)
     );
@@ -47,10 +47,14 @@ export const fetchDiaryEntriesForDate = async (userId, date) => {
 };
 
 // Add a set to an existing exercise entry
-export const addSetToExercise = async (entryId, set) => {
+export const addSetToExercise = async (userId, entryId, set) => {
+  if (!userId) {
+    console.error('Error adding set: userId is undefined');
+    throw new Error('User ID is required to add a set.');
+  }
   try {
-    const entryRef = doc(db, 'diaryEntries', entryId);
-    await updateDoc(entryRef, {
+    const entryRef = doc(db, 'users', userId, 'diaryEntries', entryId);
+    await updateFirestoreDoc(entryRef, {
       sets: arrayUnion(set)
     });
   } catch (error) {
@@ -60,10 +64,14 @@ export const addSetToExercise = async (entryId, set) => {
 };
 
 // Delete a set from an existing exercise entry
-export const deleteSetFromExercise = async (entryId, set) => {
+export const deleteSetFromExercise = async (userId, entryId, set) => {
+  if (!userId) {
+    console.error('Error deleting set: userId is undefined');
+    throw new Error('User ID is required to delete a set.');
+  }
   try {
-    const entryRef = doc(db, 'diaryEntries', entryId);
-    await updateDoc(entryRef, {
+    const entryRef = doc(db, 'users', userId, 'diaryEntries', entryId);
+    await updateFirestoreDoc(entryRef, {
       sets: arrayRemove(set)
     });
   } catch (error) {
@@ -73,13 +81,19 @@ export const deleteSetFromExercise = async (entryId, set) => {
 };
 
 // Update a set in an existing exercise entry
-export const updateSetInExercise = async (entryId, oldSet, newSet) => {
+export const updateSetInExercise = async (userId, entryId, oldSet, newSet) => {
+  if (!userId) {
+    console.error('Error updating set: userId is undefined');
+    throw new Error('User ID is required to update a set.');
+  }
   try {
-    const entryRef = doc(db, 'diaryEntries', entryId);
-    await updateDoc(entryRef, {
+    const entryRef = doc(db, 'users', userId, 'diaryEntries', entryId);
+    // Firestore array update: remove old, then add new.
+    // For more complex array updates, consider fetching, modifying in code, then setting the whole array.
+    await updateFirestoreDoc(entryRef, {
       sets: arrayRemove(oldSet)
     });
-    await updateDoc(entryRef, {
+    await updateFirestoreDoc(entryRef, {
       sets: arrayUnion(newSet)
     });
   } catch (error) {
@@ -89,9 +103,13 @@ export const updateSetInExercise = async (entryId, oldSet, newSet) => {
 };
 
 // Delete an exercise entry
-export const deleteExerciseFromDiary = async (entryId) => {
+export const deleteExerciseFromDiary = async (userId, entryId) => {
+  if (!userId) {
+    console.error('Error deleting exercise: userId is undefined');
+    throw new Error('User ID is required to delete an exercise.');
+  }
   try {
-    const entryRef = doc(db, 'diaryEntries', entryId);
+    const entryRef = doc(db, 'users', userId, 'diaryEntries', entryId);
     await deleteDoc(entryRef);
   } catch (error) {
     console.error('Error deleting exercise from diary:', error);
@@ -126,7 +144,7 @@ export const addMealToDiary = async (userId, date, meal) => {
     };
 
     // Add the document to Firestore
-    const docRef = await addDoc(collection(db, 'diaryEntries'), mealEntry);
+    const docRef = await addDoc(collection(db, 'users', userId, 'diaryEntries'), mealEntry);
     console.log('Meal added with ID: ', docRef.id);
     
     return { id: docRef.id, ...mealEntry };
@@ -138,14 +156,35 @@ export const addMealToDiary = async (userId, date, meal) => {
 
 
 // Add a new weight entry (if there is no weight yet for the day)
-export const addWeightToDiary = async (userId, weightEntry) => {
+export const addWeightToDiary = async (userId, weightEntry, currentFormattedDate) => {
+  if (!userId) {
+    console.error('Error adding weight: userId is undefined');
+    throw new Error('User ID is required to add weight.');
+  }
+  // Check if the diary entry date is in the future
+  if (weightEntry.date > currentFormattedDate) {
+    console.error('Error adding weight: Cannot log weight for a future date.');
+    throw new Error('Cannot log weight for a future date.');
+  }
+
   try {
-    const docRef = await addDoc(collection(db, 'diaryEntries'), {
+    const docRef = await addDoc(collection(db, 'users', userId, 'diaryEntries'), {
       userId: userId,
       date: weightEntry.date,
       weight: weightEntry.weight,
       type: 'weight'
     });
+
+    // Update user's main weight in their profile if the entry date is today or in the future
+    if (weightEntry.date >= currentFormattedDate) {
+      const userProfileRef = doc(db, 'users', userId);
+      await updateFirestoreDoc(userProfileRef, {
+        weight: weightEntry.weight
+      });
+      console.log(`User ${userId} main weight updated to ${weightEntry.weight} on profile.`);
+    } else {
+      console.log(`User ${userId} main weight not updated on profile as diary date ${weightEntry.date} is before ${currentFormattedDate} or it's a past entry.`);
+    }
     return docRef;
   } catch (error) {
     console.error('Error adding weight to diary:', error);
@@ -154,13 +193,34 @@ export const addWeightToDiary = async (userId, weightEntry) => {
 };
 
 // Update existing weight entry
-export const updateWeightInDiary = async (userId, entryId, weightEntry) => {
+export const updateWeightInDiary = async (userId, entryId, weightEntry, currentFormattedDate) => {
+  if (!userId) {
+    console.error('Error updating weight: userId is undefined');
+    throw new Error('User ID is required to update weight.');
+  }
+  // Check if the diary entry date is in the future
+  if (weightEntry.date > currentFormattedDate) {
+    console.error('Error updating weight: Cannot log weight for a future date.');
+    throw new Error('Cannot log weight for a future date.');
+  }
+
   try {
-    const entryRef = doc(db, 'diaryEntries', entryId);
-    await updateDoc(entryRef, {
+    const entryRef = doc(db, 'users', userId, 'diaryEntries', entryId);
+    await updateFirestoreDoc(entryRef, {
       weight: weightEntry.weight,
       date: weightEntry.date
     });
+
+    // Update user's main weight in their profile if the entry date is today or in the future
+    if (weightEntry.date >= currentFormattedDate) {
+      const userProfileRef = doc(db, 'users', userId);
+      await updateFirestoreDoc(userProfileRef, {
+        weight: weightEntry.weight
+      });
+      console.log(`User ${userId} main weight updated to ${weightEntry.weight} on profile after diary update.`);
+    } else {
+      console.log(`User ${userId} main weight not updated on profile as diary date ${weightEntry.date} is before ${currentFormattedDate} during update, or it's a past entry.`);
+    }
   } catch (error) {
     console.error('Error updating weight in diary:', error);
     throw error;
@@ -168,12 +228,74 @@ export const updateWeightInDiary = async (userId, entryId, weightEntry) => {
 };
 
 // Delete a meal entry
-export const deleteMealFromDiary = async (entryId) => {
+export const deleteMealFromDiary = async (userId, entryId) => {
+  if (!userId) {
+    console.error('Error deleting meal: userId is undefined');
+    throw new Error('User ID is required to delete a meal.');
+  }
   try {
-    const entryRef = doc(db, 'diaryEntries', entryId);
+    const entryRef = doc(db, 'users', userId, 'diaryEntries', entryId);
     await deleteDoc(entryRef);
   } catch (error) {
     console.error('Error deleting meal from diary:', error);
     throw error;
+  }
+};
+
+// Ajoute ou met à jour le commentaire du jour
+export const setDayComment = async (userId, date, comment) => {
+  if (!userId) {
+    console.error('Error setting day comment: userId is undefined');
+    throw new Error('User ID is required to set a day comment.');
+  }
+  try {
+    // Cherche s'il existe déjà une entrée de commentaire pour ce jour
+    const q = query(
+      collection(db, 'users', userId, 'diaryEntries'),
+      where('userId', '==', userId),
+      where('date', '==', date),
+      where('type', '==', 'dayComment')
+    );
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) {
+      // Mise à jour si déjà existant
+      const entryRef = doc(db, 'users', userId, 'diaryEntries', snapshot.docs[0].id);
+      await updateFirestoreDoc(entryRef, { comment });
+    } else {
+      // Sinon, création
+      await addDoc(collection(db, 'users', userId, 'diaryEntries'), {
+        userId,
+        date,
+        type: 'dayComment',
+        comment,
+      });
+    }
+  } catch (error) {
+    console.error('Error setting day comment:', error);
+    throw error;
+  }
+};
+
+// Pour récupérer le commentaire du jour
+export const fetchDayComment = async (userId, date) => {
+  if (!userId) {
+    console.error('Error fetching day comment: userId is undefined');
+    return ''; // Or throw an error, depending on desired behavior
+  }
+  try {
+    const q = query(
+      collection(db, 'users', userId, 'diaryEntries'),
+      where('userId', '==', userId),
+      where('date', '==', date),
+      where('type', '==', 'dayComment')
+    );
+    const snapshot = await getDocs(q);
+    if (!snapshot.empty) {
+      return snapshot.docs[0].data().comment || '';
+    }
+    return '';
+  } catch (error) {
+    console.error('Error fetching day comment:', error);
+    return '';
   }
 };

@@ -23,7 +23,7 @@ const ACTIVITY_LEVELS = [
 const AccountScreen = () => {
   const [user, setUser] = useState(null);
   const [userInfo, setUserInfo] = useState({});
-  const [lastWeight, setLastWeight] = useState(null);
+  
   const [loading, setLoading] = useState(true);
 
   // Modal state
@@ -45,23 +45,8 @@ const AccountScreen = () => {
             setUserInfo(userDoc.data());
           } else {
             console.log('User document does not exist');
-          }
-
-          // Fetch the latest weight entry
-          const weightQuery = query(
-            collection(db, 'diaryEntries'),
-            where('userId', '==', currentUser.uid),
-            where('type', '==', 'weight'),
-            orderBy('date', 'desc'),
-            limit(1)
-          );
-          const weightSnapshot = await getDocs(weightQuery);
-          if (!weightSnapshot.empty) {
-            const weightData = weightSnapshot.docs[0].data();
-            setLastWeight(weightData.weight);
-          } else {
-            setLastWeight(userDoc.data().weight);
-          }
+          }       
+          
         } else {
           console.log('No user is signed in');
         }
@@ -138,10 +123,10 @@ const AccountScreen = () => {
           <Text style={styles.option}>         
           </Text>
           <Text style={styles.option}>
-            Gender: <Text style={styles.value}>{user.gender}</Text>
+            Gender: <Text style={styles.value}>{userInfo.gender}</Text>
           </Text>
           <Text style={styles.option}>
-            Email: <Text style={styles.value}>{user.email}</Text>
+            Email: <Text style={styles.value}>{userInfo.email}</Text>
           </Text>
           <Text style={styles.option}>
             Age: <Text style={styles.value}>{calculateAge(userInfo.dateOfBirth)}</Text>
@@ -150,7 +135,7 @@ const AccountScreen = () => {
             Date of Birth: <Text style={styles.value}>{userInfo.dateOfBirth}</Text>
           </Text>
           <Text style={styles.option}>
-            Weight: <Text style={styles.value}>{lastWeight !== null ? `${lastWeight} kg` : 'N/A'}</Text>
+            Weight: <Text style={styles.value}>{userInfo.weight}Kg</Text>
           </Text>
           <Text style={styles.option}>
             Size: <Text style={styles.value}>{userInfo.height} cm</Text>

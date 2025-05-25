@@ -3,16 +3,21 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import theme from '../styles/theme';
 
-const WeightCard = ({ item, onEdit }) => (
+const WeightCard = ({ item, onEdit, isEditable = true }) => (
   <View style={styles.card}>
     <View style={styles.cardRow}>
       <Text style={styles.cardTitle}>{item.weight} kg</Text>
       <TouchableOpacity
-        style={styles.updateButton}
-        onPress={onEdit}
+        style={[styles.updateButton, !isEditable && styles.disabledIconStyle]}
+        onPress={onEdit} // The parent (DiaryScreen) already provides the correct onEdit behavior
+        disabled={!isEditable}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <Ionicons name="pencil-outline" size={24} color={theme.colors.primary} />
+        <Ionicons
+          name="pencil-outline"
+          size={24}
+          color={isEditable ? theme.colors.primary : (theme.colors.disabledText || '#cccccc')}
+        />
       </TouchableOpacity>
     </View>
   </View>
@@ -36,6 +41,9 @@ const styles = StyleSheet.create({
   },
   updateButton: {
     padding: 4,
+  },
+  disabledIconStyle: {
+    opacity: 0.5, // Visually indicate that the button is less interactive
   },
 });
 

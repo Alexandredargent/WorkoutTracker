@@ -67,6 +67,8 @@ const DiaryScreen = ({ navigation, route }) => {
   const [currentSet, setCurrentSet] = useState(null);
   const [currentEntryId, setCurrentEntryId] = useState(null);
   const [userInfo, setUserInfo] = useState(null);
+  const [dayComment, setDayCommentState] = useState('');
+  const [isCommentModalVisible, setIsCommentModalVisible] = useState(false);
 
   const [nutritionCollapsed, setNutritionCollapsed] = useState(false);
   const [editMealModalVisible, setEditMealModalVisible] = useState(false);
@@ -188,15 +190,6 @@ const DiaryScreen = ({ navigation, route }) => {
     }, [])
   );
 
-  // Update calorie goal when weight entry changes
-  useEffect(() => {
-    if (userInfo && weightEntry && weightEntry.weight) {
-      // Update userInfo with the new weight for goal calculations
-      const updatedUserInfo = { ...userInfo, weight: weightEntry.weight };
-      setCalorieGoal(calculateCalorieTarget(updatedUserInfo));
-    }
-  }, [weightEntry?.weight]);
-
   // Date change handler
   const handleDateChange = (date) => {
     setSelectedDate(date);
@@ -223,13 +216,18 @@ const DiaryScreen = ({ navigation, route }) => {
       timestamp: new Date().toISOString(),
     };
     try {
-      await addSetToExercise(entryId, set);
+      const user = auth.currentUser;
+      if (!user) {
+        Alert.alert('Error', 'You must be logged in to add a set.');
+        return;
+      }
+      await addSetToExercise(user.uid, entryId, set);
       setReps('');
       setWeight('');
       setEntries((prevEntries) =>
         prevEntries.map((entry) =>
           entry.id === entryId
-            ? { ...entry, sets: entry.sets ? [...entry.sets, set] : [set] }
+            ? { ...entry, sets: Array.isArray(entry.sets) ? [...entry.sets, set] : [set] }
             : entry
         )
       );
@@ -242,7 +240,12 @@ const DiaryScreen = ({ navigation, route }) => {
   // Delete set from exercise handler
   const handleDeleteSet = async (entryId, set) => {
     try {
-      await deleteSetFromExercise(entryId, set);
+      const user = auth.currentUser;
+      if (!user) {
+        Alert.alert('Error', 'You must be logged in to delete a set.');
+        return;
+      }
+      await deleteSetFromExercise(user.uid, entryId, set);
       setEntries((prevEntries) =>
         prevEntries.map((entry) =>
           entry.id === entryId
@@ -259,7 +262,12 @@ const DiaryScreen = ({ navigation, route }) => {
   // Update set in exercise handler
   const handleUpdateSet = async (entryId, oldSet, newSet) => {
     try {
-      await updateSetInExercise(entryId, oldSet, newSet);
+      const user = auth.currentUser;
+      if (!user) {
+        Alert.alert('Error', 'You must be logged in to update a set.');
+        return;
+      }
+      await updateSetInExercise(user.uid, entryId, oldSet, newSet);
       setEntries((prevEntries) =>
         prevEntries.map((entry) =>
           entry.id === entryId
@@ -276,7 +284,12 @@ const DiaryScreen = ({ navigation, route }) => {
   // Delete exercise from diary handler
   const handleDeleteExercise = async (entryId) => {
     try {
-      await deleteExerciseFromDiary(entryId);
+      const user = auth.currentUser;
+      if (!user) {
+        Alert.alert('Error', 'You must be logged in to delete an exercise.');
+        return;
+      }
+      await deleteExerciseFromDiary(user.uid, entryId);
       setEntries((prevEntries) => prevEntries.filter(entry => entry.id !== entryId));
     } catch (error) {
       console.error('Error deleting exercise:', error);
@@ -287,7 +300,12 @@ const DiaryScreen = ({ navigation, route }) => {
   // Delete meal from diary handler
   const handleDeleteMeal = async (entryId) => {
     try {
-      await deleteMealFromDiary(entryId);
+      const user = auth.currentUser;
+      if (!user) {
+        Alert.alert('Error', 'You must be logged in to delete a meal.');
+        return;
+      }
+      await deleteMealFromDiary(user.uid, entryId);
       setEntries((prevEntries) => prevEntries.filter(entry => entry.id !== entryId));
       Alert.alert('Success', 'Meal deleted successfully.');
     } catch (error) {
@@ -298,7 +316,15 @@ const DiaryScreen = ({ navigation, route }) => {
 
   // Open weight modal handler
   const handleOpenWeightModal = () => {
-    const existingWeight = entries.find(entry => entry.weight !== undefined);
+    const todayFormatted = format(new Date(), 'yyyy-MM-dd');
+    const selectedDayFormatted = format(selectedDate, 'yyyy-MM-dd');
+
+    if (selectedDayFormatted > todayFormatted) {
+      Alert.alert("Future Date", "You cannot log weight for a future date.");
+      return;
+    }
+
+    const existingWeight = entries.find(entry => entry.type === 'weight' && entry.date === selectedDayFormatted);
     if (existingWeight) {
       setWeightInput(existingWeight.weight.toString());
     } else {
@@ -313,31 +339,65 @@ const DiaryScreen = ({ navigation, route }) => {
       Alert.alert('Input Error', 'Please enter your weight.');
       return;
     }
-    const weightEntry = {
+    const weightValue = parseFloat(weightInput);
+    const entryDate = format(selectedDate, 'yyyy-MM-dd');
+    const todayFormatted = format(new Date(), 'yyyy-MM-dd');
+
+    if (entryDate > todayFormatted) {
+      Alert.alert("Future Date", "You cannot log weight for a future date.");
+      setIsWeightModalVisible(false); // Close modal if it was somehow opened
+      return;
+    }
+
+    const weightPayload = {
       weight: parseFloat(weightInput),
-      date: format(selectedDate, 'yyyy-MM-dd'),
+      date: entryDate,
     };
+
     try {
-      const existingWeight = entries.find(entry => entry.weight !== undefined);
-      if (existingWeight) {
-        await updateWeightInDiary(auth.currentUser.uid, existingWeight.id, weightEntry);
+      const user = auth.currentUser;
+      if (!user) {
+        Alert.alert('Error', 'User not signed in.');
+        return;
+      }
+
+      const existingWeightDiaryEntry = entries.find(
+        (entry) => entry.type === 'weight' && entry.date === entryDate
+      );
+
+      if (existingWeightDiaryEntry) {
+        await updateWeightInDiary(user.uid, existingWeightDiaryEntry.id, weightPayload, todayFormatted);
         setEntries((prevEntries) =>
           prevEntries.map((entry) =>
-            entry.id === existingWeight.id ? { ...entry, weight: weightEntry.weight } : entry
+            entry.id === existingWeightDiaryEntry.id ? { ...entry, ...weightPayload } : entry
           )
         );
       } else {
-        const newWeightEntry = await addWeightToDiary(auth.currentUser.uid, weightEntry);
-        setEntries((prevEntries) => [...prevEntries, { ...weightEntry, id: newWeightEntry.id }]);
+        const newDocRef = await addWeightToDiary(user.uid, weightPayload, todayFormatted);
+        setEntries((prevEntries) => [
+          ...prevEntries,
+          { 
+            id: newDocRef.id, 
+            userId: user.uid, 
+            type: 'weight', 
+            ...weightPayload 
+          },
+        ]);
       }
+
+      // Update local userInfo if the user's main weight in Firestore was potentially updated
+      if (entryDate >= todayFormatted) {
+        setUserInfo(prevUserInfo => prevUserInfo ? ({ ...prevUserInfo, weight: weightValue }) : null);
+      }
+
       setRefreshTrigger(prev => prev + 1);
       setIsWeightModalVisible(false);
+      setWeightInput(''); // Clear input
     } catch (error) {
       console.error('Error processing weight entry:', error);
       Alert.alert('Error', 'Failed to process weight entry. Please try again.');
     }
   };
-
   // Edit set modal handler
   const handleEditSet = (entryId, set) => {
     setCurrentSet(set);
@@ -415,7 +475,12 @@ const DiaryScreen = ({ navigation, route }) => {
   };
 
   // Find weight entry for the day
-  const weightEntry = entries.find(entry => entry.weight !== undefined);
+  const formattedSelectedDate = format(selectedDate, 'yyyy-MM-dd');
+  const weightEntry = entries.find(entry => entry.type === 'weight' && entry.date === formattedSelectedDate);
+  
+  // Determine if the selected date is in the future
+  const todayFormattedForCheck = format(new Date(), 'yyyy-MM-dd');
+  const isFutureDate = formattedSelectedDate > todayFormattedForCheck;
 
   // Calculate macro goals based on user info and calorie goal
   const currentWeight = weightEntry && weightEntry.weight ? weightEntry.weight : (userInfo ? userInfo.weight : 0);
@@ -456,7 +521,8 @@ const DiaryScreen = ({ navigation, route }) => {
   const handleUpdateMealQuantity = async () => {
     if (!selectedMealEntry) return;
     try {
-      const entryRef = doc(db, 'diaryEntries', selectedMealEntry.id);
+     const user = auth.currentUser;
+     const entryRef = doc(db, 'users', user.uid, 'diaryEntries', selectedMealEntry.id);  
       await updateDoc(entryRef, { quantity: parseFloat(editQuantity) || 100 });
       // Optionally refresh diary entries here
       setEntries(prev =>
@@ -471,6 +537,17 @@ const DiaryScreen = ({ navigation, route }) => {
       alert('Failed to update quantity');
     }
   };
+
+  useEffect(() => {
+    const fetchComment = async () => {
+      const user = auth.currentUser;
+      if (user) {
+        const comment = await fetchDayComment(user.uid, format(selectedDate, 'yyyy-MM-dd'));
+        setDayCommentState(comment);
+      }
+    };
+    fetchComment();
+  }, [selectedDate]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -622,8 +699,9 @@ const DiaryScreen = ({ navigation, route }) => {
                   <Ionicons name="scale" size={32} color={theme.colors.primary} style={{ marginRight: 8 }} />
                   <Text style={styles.sectionTitle}>Weight</Text>
                   <TouchableOpacity
-                    style={styles.headerAddButton}
-                    onPress={handleOpenWeightModal}
+                    style={[styles.headerAddButton, isFutureDate && styles.disabledButton]}
+                    onPress={!isFutureDate ? handleOpenWeightModal : () => Alert.alert("Future Date", "You cannot log weight for a future date.")}
+                    disabled={isFutureDate}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
                     {weightEntry ? (
@@ -633,17 +711,28 @@ const DiaryScreen = ({ navigation, route }) => {
                     )}
                   </TouchableOpacity>
                 </View>
-                {weightEntry ? (
-                  <WeightCard
-                    item={weightEntry}
-                    onEdit={handleOpenWeightModal}
-                    // ...other props as needed
-                  />
+                {isFutureDate ? (
+                  <View style={styles.emptySection}><Text style={styles.emptySectionText}>Cannot log weight for a future date.</Text></View>
+                ) : weightEntry ? (
+                    <WeightCard
+                      item={weightEntry}
+                      onEdit={handleOpenWeightModal} // It's not a future date, so direct call
+                      isEditable={true}             // It's not a future date, so it's editable
+                    />
                 ) : (
                   <View style={styles.emptySection}>
                     <Text style={styles.emptySectionText}>No weight logged for this day</Text>
                   </View>
                 )}
+                <TouchableOpacity
+                  style={{ marginVertical: 10, alignSelf: 'center', backgroundColor: theme.colors.primary, borderRadius: 8, padding: 8 }}
+                  onPress={() => setIsCommentModalVisible(true)}
+                >
+                  <Text style={{ color: '#fff', fontWeight: 'bold' }}>
+                    {dayComment ? 'Modify comment of the day' : 'Add comment of the day'}
+                  </Text>
+                </TouchableOpacity>
+                <Text style={{ margin: 8, fontStyle: 'italic', color: '#555' }}>{dayComment}</Text>
               </>
             )}
           </ScrollView>
@@ -756,6 +845,35 @@ const DiaryScreen = ({ navigation, route }) => {
                 }}
               />
               <Button title="Cancel" onPress={() => setEditMealModalVisible(false)} />
+            </View>
+          </View>
+        </Modal>
+
+        <Modal
+          visible={isCommentModalVisible}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setIsCommentModalVisible(false)}
+        >
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0008' }}>
+            <View style={{ backgroundColor: 'white', padding: 20, borderRadius: 10, width: 280 }}>
+              <Text style={{ fontWeight: 'bold', marginBottom: 8 }}>Comment on the day</Text>
+              <TextInput
+                value={dayComment}
+                onChangeText={setDayCommentState}
+                placeholder="Add comments or notes..."
+                style={{ borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 8, minHeight: 60, marginBottom: 12 }}
+                multiline
+              />
+              <Button
+                title="Save"
+                onPress={async () => {
+                  const user = auth.currentUser;
+                  await setDayComment(user.uid, format(selectedDate, 'yyyy-MM-dd'), dayComment);
+                  setIsCommentModalVisible(false);
+                }}
+              />
+              <Button title="Cancel" onPress={() => setIsCommentModalVisible(false)} />
             </View>
           </View>
         </Modal>
@@ -998,6 +1116,9 @@ const styles = StyleSheet.create({
   },
   progressBarFill: {
     ...theme.progressBarFill,
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
 });
 

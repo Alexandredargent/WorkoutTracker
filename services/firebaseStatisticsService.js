@@ -3,7 +3,7 @@ import { db } from './firebase';
 
 export const fetchStatistics = async (userId) => {
   try {
-    const q = query(collection(db, 'diaryEntries'), where('userId', '==', userId), where('type', '==', 'exercise'));
+    const q = query(collection(db, 'users', userId, 'diaryEntries'), where('userId', '==', userId), where('type', '==', 'exercise'));
     const snapshot = await getDocs(q);
     const entries = snapshot.docs.map(doc => doc.data());
 
@@ -55,7 +55,7 @@ export const fetchStatistics = async (userId) => {
 
 export const fetchWeightHistory = async (userId) => {
   const weightEntries = [];
-  const q = query(collection(db, 'diaryEntries'), where('userId', '==', userId), where('type', '==', 'weight'));
+  const q = query(collection(db, 'users', userId, 'diaryEntries'), where('userId', '==', userId), where('type', '==', 'weight'));
   const querySnapshot = await getDocs(q);
   querySnapshot.forEach((doc) => {
     weightEntries.push({ date: doc.data().date, weight: doc.data().weight });
