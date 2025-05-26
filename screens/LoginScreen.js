@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { ImageBackground } from 'react-native';
+
 import { 
   View, 
   TextInput, 
@@ -55,85 +57,107 @@ const LoginScreen = ({ navigation, setUser }) => {
   };
 
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
-    >
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        keyboardShouldPersistTaps="handled"
-      >
-        <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
-          <Image
-            source={{ uri: '/placeholder.svg?height=100&width=100' }}
-            style={styles.logo}
+    
+  <ImageBackground
+  source={theme.backgroundImage.source}
+  resizeMode={theme.backgroundImage.defaultResizeMode}
+  style={styles.backgroundImage}
+>
+  <KeyboardAvoidingView
+    behavior={Platform.OS === "ios" ? "padding" : "height"}
+    style={styles.keyboardAvoiding}
+    keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+  >
+    <View style={styles.content}>
+      <Animated.View style={{ opacity: fadeAnim, alignItems: 'center', width: '100%' }}>
+        <Image
+          source={require('../assets/Applogo.png')}
+             style={styles.logo}
+        />
+
+        <Text style={styles.title}>Fittrack</Text>
+        <View style={styles.inputContainer}>
+          <TextInput
+            placeholder="Email"
+            value={email}
+            onChangeText={setEmail}
+            style={styles.input}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            onSubmitEditing={handleLogin}
           />
-          <Text style={styles.title}>Welcome Back</Text>
-          <View style={styles.inputContainer}>
-            <TextInput
-              placeholder="Email"
-              value={email}
-              onChangeText={setEmail}
-              style={styles.input}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              onSubmitEditing={handleLogin}
-            />
-            <TextInput
-              placeholder="Password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              style={styles.input}
-              onSubmitEditing={handleLogin}
-            />
-          </View>
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-          <TouchableOpacity 
-            style={[styles.button, isLoading && styles.buttonDisabled]} 
-            onPress={handleLogin}
-            disabled={isLoading}
-          >
-            <Text style={styles.buttonText}>
-              {isLoading ? 'Logging in...' : 'Log In'}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            onPress={() => handleNavigation('SignUp')}
-            style={styles.linkButton}
-          >
-            <Text style={styles.link}>
-              Don't have an account? Sign Up
-            </Text>
-          </TouchableOpacity>
-        </Animated.View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          <TextInput
+            placeholder="Password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            style={styles.input}
+            onSubmitEditing={handleLogin}
+          />
+        </View>
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+        <TouchableOpacity
+          style={[styles.button, isLoading && styles.buttonDisabled]}
+          onPress={handleLogin}
+          disabled={isLoading}
+        >
+          <Text style={styles.buttonText}>
+            {isLoading ? 'Logging in...' : 'Log In'}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => handleNavigation('SignUp')}
+          style={styles.linkButton}
+        >
+          <Text style={styles.link}>
+            Don't have an account? Sign Up
+          </Text>
+        </TouchableOpacity>
+      </Animated.View>
+    </View>
+  </KeyboardAvoidingView>
+</ImageBackground>
+
+
+
+
+
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    
   },
+  keyboardAvoiding: {
+  flex: 1,
+},
+
+backgroundImage: {
+  flex: 1,
+},
+
+content: {
+  flex: 1,
+  justifyContent: 'center',
+  alignItems: 'center',
+  padding: theme.spacing.lg,
+},
+
+
   scrollContainer: {
     flexGrow: 1,
     justifyContent: 'center',
   },
-  content: {
-    alignItems: 'center',
-    padding: theme.spacing.lg,
-  },
+  
   logo: {
-    width: 100,
-    height: 100,
-    marginBottom: theme.spacing.lg,
+    width: 200,
+    height: 200,
+    
   },
   title: {
-    ...theme.typography.sectionTitle,
-    fontSize: 24,
+    ...theme.typography.sectionTitleLogo,    
     marginBottom: theme.spacing.lg,
   },
   inputContainer: {

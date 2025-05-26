@@ -12,6 +12,7 @@ import {
   ScrollView,
   Image,
 } from 'react-native';
+import { ImageBackground } from 'react-native';
 import Collapsible from 'react-native-collapsible';
 import { format, addDays, subDays } from 'date-fns';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
@@ -550,6 +551,11 @@ const DiaryScreen = ({ navigation, route }) => {
   }, [selectedDate]);
 
   return (
+    <ImageBackground
+  source={theme.backgroundImage.source}
+  resizeMode={theme.backgroundImage.defaultResizeMode}
+  style={{ flex: 1 }}
+>
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.header}>
@@ -879,6 +885,7 @@ const DiaryScreen = ({ navigation, route }) => {
         </Modal>
       </View>
     </SafeAreaView>
+    </ImageBackground>
   );
 };
 
@@ -905,13 +912,15 @@ const muscleIcons = {
 
 const styles = StyleSheet.create({
   safeArea: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
+  flex: 1,
+  
+},
+container: {
+  flex: 1,
+  backgroundColor: 'rgba(255, 255, 255, 0.26)',
+  
+},
+
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',

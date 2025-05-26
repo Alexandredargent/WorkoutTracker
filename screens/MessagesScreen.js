@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, FlatList, TextInput, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import { db, auth } from '../services/firebase';
 import { collection, query, where, getDocs, doc, getDoc, onSnapshot, addDoc, serverTimestamp, orderBy } from 'firebase/firestore';
 import theme from '../styles/theme';
+import { ImageBackground } from 'react-native';
 
 const MessagesScreen = ({ navigation }) => {
   const [chats, setChats] = useState([]);
@@ -121,7 +122,12 @@ const MessagesScreen = ({ navigation }) => {
   const isFriend = (userIdToCheck) => friends.some(f => f.id === userIdToCheck);
 
   return (
-    <View style={{ flex: 1, padding: theme.spacing.md, backgroundColor: theme.colors.background }}>
+    <ImageBackground
+        source={theme.backgroundImage.source}
+        resizeMode={theme.backgroundImage.defaultResizeMode}
+        style={{ flex: 1 }}
+      >
+    <View style={styles.container}>
       <Text style={[theme.typography.sectionTitle, { marginTop: 0 }]}>Find Friends</Text>
       <TextInput
         placeholder="Search users..."
@@ -203,7 +209,17 @@ const MessagesScreen = ({ navigation }) => {
         ListEmptyComponent={<Text style={theme.typography.empty}>No friends yet.</Text>}
       />
     </View>
+    </ImageBackground>
   );
 };
 
+const styles = StyleSheet.create({
+  
+  container: {
+  flex: 1,
+  backgroundColor: 'rgba(255, 255, 255, 0.26)',
+  padding: theme.spacing.md,
+ },
+  
+});
 export default MessagesScreen;

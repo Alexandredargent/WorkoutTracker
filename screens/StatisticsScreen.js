@@ -5,6 +5,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { fetchStatistics, fetchWeightHistory } from '../services/firebaseStatisticsService';
 import { auth } from '../services/firebase';
 import theme from '../styles/theme';
+import { ImageBackground } from 'react-native';
+
 
 const StatisticsScreen = () => {
   const [totalWorkouts, setTotalWorkouts] = useState(0);
@@ -87,7 +89,14 @@ const StatisticsScreen = () => {
     }
   }
 
+
   return (
+    <ImageBackground
+  source={theme.backgroundImage.source}
+  resizeMode={theme.backgroundImage.defaultResizeMode}
+  style={{ flex: 1 }}
+  >
+  
     <ScrollView style={styles.container}>
       
 
@@ -157,15 +166,17 @@ const StatisticsScreen = () => {
         )}
       </View>
     </ScrollView>
+    </ImageBackground>
+
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-    padding: theme.spacing.lg,
-  },
+  padding: theme.spacing.lg,
+  backgroundColor: 'rgba(255, 255, 255, 0.26)',
+},
+
   title: {
     ...theme.typography.title,
   },

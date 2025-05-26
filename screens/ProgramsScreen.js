@@ -6,6 +6,7 @@ import { fetchUserPrograms, fetchPublicPrograms, deleteUserProgram, toggleFavori
 import { Ionicons } from '@expo/vector-icons';
 import { auth } from '../services/firebase';
 import { useFocusEffect } from '@react-navigation/native';
+import { ImageBackground } from 'react-native';
 
 const ProgramsScreen = ({ navigation }) => {
   const [programs, setPrograms] = useState([]);
@@ -148,6 +149,7 @@ const ProgramsScreen = ({ navigation }) => {
     const isFavorite = favoritePrograms.includes(item.id);
     
     return (
+      
       <TouchableOpacity 
         style={styles.programItem} 
         onPress={() => navigation.navigate('ProgramDetailScreen', { programId: item.id, programName: item.name })}
@@ -244,6 +246,11 @@ const ProgramsScreen = ({ navigation }) => {
   }
 
   return (
+    <ImageBackground
+    source={theme.backgroundImage.source}
+    resizeMode={theme.backgroundImage.defaultResizeMode}
+    style={{ flex: 1 }}
+  >
     <SafeAreaView style={styles.container}>
       {/* Search and Add Button Container */}
       <View style={styles.searchAddContainer}>
@@ -293,14 +300,16 @@ const ProgramsScreen = ({ navigation }) => {
         />
       )}
     </SafeAreaView>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
+  flex: 1,
+  backgroundColor: 'rgba(255, 255, 255, 0.26)',
+},
+
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',

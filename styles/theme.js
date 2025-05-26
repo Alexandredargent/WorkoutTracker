@@ -1,12 +1,12 @@
 const colors = {
-  primary: '#232799',
-  background: '#EFEFF4',
-  card: '#fff',
-  text: '#333',
+  primary: '#00FFC2', // menthe néon
+  card: '#f2f4f7', // bleu nuit profond pour les cartes
+  background: '#0A0F1C', // fond général //#f2f4f7 blanc
+  text: '#00FFC2', // texte principal
   muted: '#888',
-  accent: '#FF9800',
+  accent: '#00B6E0', // bleu électrique
   error: '#E91E63',
-  border: '#e0e0e0',
+  border: '#00B6E0',
   shadow: '#000',
 };
 
@@ -18,7 +18,18 @@ const spacing = {
   xl: 32,
 };
 
+const fonts = {
+  title: 'Iceland_400Regular',
+};
+
 const typography = {
+  sectionTitleLogo: {
+    fontSize: 60,
+    fontFamily: fonts.title,
+    fontWeight: '600',
+    color: colors.primary,
+    textAlign: 'center',
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
@@ -57,7 +68,7 @@ const sectionHeader = {
   flexDirection: 'row',
   alignItems: 'center',
   justifyContent: 'center',
-  backgroundColor: '#F7F7F7',
+  backgroundColor: '#101924',
   paddingHorizontal: spacing.md,
   paddingVertical: spacing.md,
   marginHorizontal: spacing.md,
@@ -75,7 +86,7 @@ const button = {
 };
 
 const input = {
-  backgroundColor: '#F7F7F7',
+  backgroundColor: '#1B2430',
   borderRadius: 8,
   paddingHorizontal: spacing.md,
   fontSize: 16,
@@ -114,7 +125,7 @@ const modal = {
   input: {
     width: '100%',
     height: 40,
-    backgroundColor: '#F7F7F7',
+    backgroundColor: '#1B2430',
     borderRadius: 8,
     paddingHorizontal: spacing.md,
     marginBottom: spacing.md,
@@ -162,7 +173,7 @@ const nutritionSummaryCard = {
 const progressBarBackground = {
   width: '100%',
   height: 10,
-  backgroundColor: '#eee',
+  backgroundColor: '#333',
   borderRadius: 5,
   marginBottom: 8,
   marginTop: 2,
@@ -174,11 +185,20 @@ const progressBarFill = {
   borderRadius: 5,
 };
 
+const backgroundImage = {
+  source: require('../assets/appLogov2.png'),
+  style: {
+    flex: 1,
+  },
+  defaultResizeMode: 'cover',
+};
+
 export default {
   colors,
   spacing,
   typography,
   card,
+  fonts,
   sectionHeader,
   button,
   input,
@@ -186,4 +206,5 @@ export default {
   nutritionSummaryCard,
   progressBarBackground,
   progressBarFill,
+  backgroundImage,
 };
