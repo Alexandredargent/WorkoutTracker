@@ -1,9 +1,19 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, SafeAreaView, StatusBar, ActivityIndicator, TextInput, StyleSheet, Modal, Image, Alert } from 'react-native';
-import { fetchExercises, addUserExercise, fetchUserExercises, deleteUserExercise } from '../services/firebaseExerciseService';
+import {
+  fetchUserPrograms,
+  deleteUserProgram,
+  fetchUserExercises,
+  fetchExercises,
+  addUserExercise,
+  deleteUserExercise,
+  toggleFavoriteExercise,
+  fetchFavoriteExercises,
+  isExerciseFavorited
+} from '../services/firebaseExerciseService.js';
 import { addExerciseToDiary } from '../services/diaryService';
 import { auth } from '../services/firebase';
-import { Ionicons } from '@expo/vector-icons'; // Ionicons is imported
+import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import theme from '../styles/theme';
 import { collection, query, orderBy, startAt, endAt, getDocs } from "firebase/firestore";
@@ -35,6 +45,7 @@ const ExerciseListScreen = ({ navigation, route }) => {
   const [selectedDifficulty, setSelectedDifficulty] = useState("");
   const [filtersVisible, setFiltersVisible] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
+  const [favoriteExercises, setFavoriteExercises] = useState([]);
 
   const difficultyLevels = ["Novice", "Beginner", "Intermediate", "Advanced", "Expert", "Master", "Grand Master", "Legendary"];
   const targetMuscleGroups = [
@@ -63,26 +74,42 @@ const ExerciseListScreen = ({ navigation, route }) => {
     "Movement Pattern #1": "",
     "Body Region": "",
   });
-  const { date } = route.params;
+  const { date, mode, originRoute } = route.params || {}; // mode: 'selectForProgram', originRoute: 'CreateProgramScreen'
 
   const loadExercises = async (startAfterDoc = null, append = false) => {
     try {
       setLoading(true);
       const user = auth.currentUser;
       let userExercises = [];
-      if (user) {
-        const { exerciseList: userList } = await fetchUserExercises(user.uid, 50, startAfterDoc);
-        userExercises = userList;
-      }
-      const { exerciseList: globalList, lastDoc: newLastDoc } = await fetchExercises(50, startAfterDoc);
-      const newExercises = [...userExercises, ...globalList.filter(e => !userExercises.some(u => u.Name === e.Name))];
-
-      if (append) {
-        setExercises(prev => [...prev, ...newExercises]);
+      
+      if (filter === 'favorites') {
+        // Load favorite exercises
+        if (user) {
+          const { exerciseList: favExercises } = await fetchFavoriteExercises(user.uid);
+          setExercises(favExercises);
+        }
       } else {
-        setExercises(newExercises);
+        // Load regular exercises
+        if (user) {
+          const { exerciseList: userList } = await fetchUserExercises(user.uid, 50, startAfterDoc);
+          userExercises = userList;
+        }
+        const { exerciseList: globalList, lastDoc: newLastDoc } = await fetchExercises(50, startAfterDoc);
+        const newExercises = [...userExercises, ...globalList.filter(e => !userExercises.some(u => u.Name === e.Name))];
+
+        if (append) {
+          setExercises(prev => [...prev, ...newExercises]);
+        } else {
+          setExercises(newExercises);
+        }
+        setLastDoc(newLastDoc);
       }
-      setLastDoc(newLastDoc);
+
+      // Load favorite exercise IDs for heart icons
+      if (user && filter !== 'favorites') {
+        const { exerciseList: favExercises } = await fetchFavoriteExercises(user.uid);
+        setFavoriteExercises(favExercises.map(ex => ex.id));
+      }
     } catch (error) {
       console.error('Error fetching exercises:', error);
     } finally {
@@ -94,7 +121,7 @@ const ExerciseListScreen = ({ navigation, route }) => {
     setExercises([]); // Clear existing exercises to start fresh
     setLastDoc(null); // Reset pagination
     await loadExercises(null); // Load the first page
-  }, []); // Empty dependency array as loadExercises itself is stable or will be recreated if its deps change
+  }, [filter]); // Reload when filter changes
 
   useEffect(() => {
     loadExercisesAndResetPagination();
@@ -103,12 +130,23 @@ const ExerciseListScreen = ({ navigation, route }) => {
   const applyFilters = (data) => {
     let filtered = [...data];
 
+    // If on favorites tab, data is already pre-filtered by favorites.
+    // Only apply search query if present.
+    if (filter === 'favorites') {
+      if (searchQuery.trim()) {
+        return filtered.filter(exercise =>
+          (exercise.Name || '').toLowerCase().includes(searchQuery.toLowerCase())
+        );
+      }
+      return filtered; // Return as is if no search query on favorites tab
+    }
+
     if (filter === 'created') {
       const user = auth.currentUser;
       if (user) {
         filtered = filtered.filter(exercise => exercise.uid === user.uid);
       } else {
-        filtered = [];
+        return []; // Return empty if no user and 'created' filter is active
       }
     }
 
@@ -122,38 +160,74 @@ const ExerciseListScreen = ({ navigation, route }) => {
       filtered = filtered.filter(exercise => exercise["Difficulty Level"] === selectedDifficulty);
     }
 
+    // Apply search query on top of other filters (if not on favorites tab)
+    if (searchQuery.trim()) {
+      filtered = filtered.filter(exercise =>
+        (exercise.Name || '').toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
     return filtered;
   };
-
-
   const handleAddExercise = async (exercise) => {
-    const user = auth.currentUser;
-    if (user) {
-      try {
-        // Ensure the exercise object has all the required fields
-        const formattedExercise = {
-          Name: exercise["Name"] || "",
-          "Difficulty Level": exercise["Difficulty Level"] || "",
-          "Target Muscle Group": exercise["Target Muscle Group"] || "",
-          "Prime Mover Muscle": exercise["Prime Mover Muscle"] || "",
-          "Secondary Muscle": exercise["Secondary Muscle"] || "",
-          "Tertiary Muscle": exercise["Tertiary Muscle"] || "",
-          "Primary Equipment": exercise["Primary Equipment"] || "",
-          Posture: exercise["Posture"] || "",
-          Grip: exercise["Grip"] || "",
-          "Movement Pattern #1": exercise["Movement Pattern #1"] || "",
-          "Body Region": exercise["Body Region"] || "",
-          "Primary Exercise Classification": exercise["Primary Exercise Classification"] || ""
-        };
+    // Destructure params directly inside the function to ensure freshest values
+    // and handle cases where route.params might be null or undefined.
+    const currentParams = route.params || {};
+    const currentMode = currentParams.mode;
+    const currentOriginRoute = currentParams.originRoute;
+    const currentDateForDiary = currentParams.date; // Will be undefined in 'selectForProgram' mode
 
-        await addExerciseToDiary(user.uid, date, formattedExercise);
-        console.log('Exercise added successfully to diary');
-        navigation.goBack();
-      } catch (error) {
-        console.error('Error adding exercise to diary:', error);
-      }
+    console.log('[ExerciseListScreen] handleAddExercise called.');
+    console.log('[ExerciseListScreen] currentMode:', currentMode);
+    console.log('[ExerciseListScreen] currentOriginRoute:', currentOriginRoute);
+    console.log('[ExerciseListScreen] currentDateForDiary:', currentDateForDiary);
+
+    if (currentMode === 'selectForProgram' && currentOriginRoute) {
+      console.log('[ExerciseListScreen] Mode is selectForProgram. Navigating back to:', currentOriginRoute);
+      // Navigate back to originRoute with selected exercise
+      navigation.navigate(currentOriginRoute, {
+        selectedExerciseForProgram: { id: exercise.id, ...exercise }
+      });
+      return; // Crucial: exit here to prevent diary logic
     } else {
-      console.log('No user is signed in.');
+      // This block handles adding the exercise to the diary
+      console.log('[ExerciseListScreen] Mode is NOT selectForProgram or originRoute is missing. Proceeding to add to diary.');
+      const user = auth.currentUser;
+      if (user) {
+        if (!currentDateForDiary) {
+          console.error("[ExerciseListScreen] handleAddExercise: Date is undefined. Cannot add exercise to diary.");
+          Alert.alert("Erreur", "Aucune date spécifiée pour l'agenda. Impossible d'ajouter l'exercice.");
+          return; // Exit if no date is provided for diary entry
+        }
+        console.log('[ExerciseListScreen] Adding to diary with date:', currentDateForDiary);
+        try {
+          // Ensure the exercise object has all the required fields for the diary
+          const formattedExercise = {
+            Name: exercise["Name"] || "",
+            "Difficulty Level": exercise["Difficulty Level"] || "",
+            "Target Muscle Group": exercise["Target Muscle Group"] || "",
+            "Prime Mover Muscle": exercise["Prime Mover Muscle"] || "",
+            "Secondary Muscle": exercise["Secondary Muscle"] || "",
+            "Tertiary Muscle": exercise["Tertiary Muscle"] || "",
+            "Primary Equipment": exercise["Primary Equipment"] || "",
+            Posture: exercise["Posture"] || "",
+            Grip: exercise["Grip"] || "",
+            "Movement Pattern #1": exercise["Movement Pattern #1"] || "",
+            "Body Region": exercise["Body Region"] || "",
+            "Primary Exercise Classification": exercise["Primary Exercise Classification"] || ""
+          };
+
+          await addExerciseToDiary(user.uid, currentDateForDiary, formattedExercise);
+          console.log('[ExerciseListScreen] Exercise added successfully to diary');
+          navigation.goBack();
+        } catch (error) {
+          console.error('[ExerciseListScreen] Error adding exercise to diary:', error);
+          Alert.alert("Erreur", "Une erreur est survenue lors de l'ajout de l'exercice à l'agenda.");
+        }
+      } else {
+        console.log('[ExerciseListScreen] No user is signed in.');
+        Alert.alert("Erreur", "Utilisateur non connecté. Veuillez vous connecter pour ajouter un exercice.");
+      }
     }
   };
 
@@ -232,10 +306,35 @@ const muscleIcons = {
   // ...add all muscle groups
 };
 
+  const handleToggleFavorite = async (exerciseId, isCurrentlyFavorite) => {
+    const user = auth.currentUser;
+    if (!user) {
+      Alert.alert("Error", "Please log in to favorite exercises.");
+      return;
+    }
+
+    try {
+      await toggleFavoriteExercise(user.uid, exerciseId, !isCurrentlyFavorite);
+      
+      if (isCurrentlyFavorite) {
+        setFavoriteExercises(prev => prev.filter(id => id !== exerciseId));
+        if (filter === 'favorites') {
+          setExercises(prev => prev.filter(ex => ex.id !== exerciseId));
+        }
+      } else {
+        setFavoriteExercises(prev => [...prev, exerciseId]);
+      }
+    } catch (error) {
+      console.error("Failed to toggle favorite:", error);
+      Alert.alert("Error", "Unable to update favorite status.");
+    }
+  };
+
   const renderExerciseItem = ({ item }) => {
     const iconSource = muscleIcons[item["Target Muscle Group"]] || muscleIcons.Default;
     const user = auth.currentUser;
     const isCreatedByUser = item.uid === user?.uid;
+    const isFavorite = favoriteExercises.includes(item.id);
 
     const handleDelete = () => {
       Alert.alert(
@@ -267,8 +366,8 @@ const muscleIcons = {
         <View style={styles.itemContent}>
           <Image source={iconSource} style={{ width: 80, height:80, marginRight: 12 }} resizeMode="contain" />
           <View style={styles.itemTextContainer}>
-            <Text style={styles.itemText}>{item["Name"]}</Text>
-            <View style={{ flexDirection: 'row', marginTop: 4 }}>
+            <Text style={styles.itemText} numberOfLines={2} ellipsizeMode="tail">{item["Name"]}</Text>
+            <View style={styles.tagsContainer}>
               {item["Target Muscle Group"]  ? (
                 <View style={styles.tag}>
                   <Text style={styles.tagText}>
@@ -293,8 +392,19 @@ const muscleIcons = {
             </View>
           </View>
         </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Ionicons name="add-circle-outline" size={24} color={theme.colors.primary} />
+        <View style={styles.itemActionsContainer}>
+          <TouchableOpacity 
+            onPress={() => handleToggleFavorite(item.id, isFavorite)} 
+            style={{ marginRight: 12 }}
+          >
+            <Ionicons 
+              name={isFavorite ? "heart" : "heart-outline"} 
+              size={24} 
+              color={isFavorite ? theme.colors.error : theme.colors.muted} 
+            />
+          </TouchableOpacity>
+          {/* The checkmark/plus icon has been removed as per your request. 
+              The main TouchableOpacity for the item still handles the add/select action. */}
           {isCreatedByUser && (
             <TouchableOpacity onPress={handleDelete} style={{ marginLeft: 12 }}>
               <Ionicons name="trash-outline" size={24} color="red" />
@@ -305,9 +415,19 @@ const muscleIcons = {
     );
   };
 
+  const handleTabChange = (tabName) => {
+    setFilter(tabName);
+    setSearchQuery(''); // Reset search query on tab change
+    // Reset other filters if they are visible and you want them reset
+    setSelectedMuscleGroup("");
+    setSelectedEquipment("");
+    setSelectedDifficulty("");
+    setFiltersVisible(false); // Optionally hide filters panel
+  };
+
   const renderTabButton = (tabName, label) => (
     <TouchableOpacity
-      onPress={() => setFilter(tabName)}
+      onPress={() => handleTabChange(tabName)}
       style={[styles.tab, filter === tabName && styles.activeTab]}
     >
       <Text style={[styles.tabText, filter === tabName && styles.activeTabText]}>{label}</Text>
@@ -325,6 +445,20 @@ const muscleIcons = {
     };
     fetchResults();
   }, [searchQuery]);
+
+  const getEmptyStateText = () => {
+    if (searchQuery.trim()) {
+      return 'No exercises found matching your search.';
+    }
+    switch (filter) {
+      case 'created':
+        return 'You haven\'t created any exercises yet. Tap \'+\' to create your first exercise.';
+      case 'favorites':
+        return 'You haven\'t favorited any exercises yet. Browse exercises and tap the heart icon to add them to favorites.';
+      default: // 'all'
+        return 'No exercises available. Tap \'+\' to create your first exercise.';
+    }
+  };
 
   // When a filter changes and searchQuery is empty, fetch all exercises and apply filters
   useEffect(() => {
@@ -370,13 +504,16 @@ const muscleIcons = {
 
       <View style={styles.tabs}>
         {renderTabButton('all', 'All')}
+        {renderTabButton('favorites', 'Favorites')}
         {renderTabButton('created', 'Created')}
+        
       </View>
 
       
 
-      {/* Filter Toggle Button */}
-      <TouchableOpacity
+      {/* Filter Toggle Button - Hide for favorites tab */}
+      {filter !== 'favorites' && (
+        <TouchableOpacity
         style={{
           flexDirection: 'row',
           alignItems: 'center',
@@ -396,9 +533,10 @@ const muscleIcons = {
           {filtersVisible ? 'Hide Filters' : 'Show Filters'}
         </Text>
       </TouchableOpacity>
+      )}
 
-      {/* Filter Options - Small Screen */}
-      {filtersVisible && (
+      {/* Filter Options - Small Screen - Hide for favorites tab */}
+      {filtersVisible && filter !== 'favorites' && (
         <View style={{ marginHorizontal: theme.spacing.lg, marginBottom: theme.spacing.sm }}>
           <View style={{ marginBottom: 4 }}>
             <Picker
@@ -510,15 +648,24 @@ const muscleIcons = {
           </View>
         </View>
       </Modal>
-      <FlatList
-        data={
-          searchQuery.trim()
-            ? applyFilters(searchResults)
-            : applyFilters(exercises)
-        }
-        keyExtractor={item => item.id}
-        renderItem={renderExerciseItem}
-      />
+      {/* Exercise List with Empty State */}
+      {applyFilters(
+        searchQuery.trim() ? searchResults : exercises
+      ).length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Ionicons name={filter === 'favorites' ? "heart-dislike-outline" : "sad-outline"} size={64} color={theme.colors.muted} />
+          <Text style={styles.emptyText}>
+            {getEmptyStateText()}
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={applyFilters(searchQuery.trim() ? searchResults : exercises)}
+          keyExtractor={item => item.id}
+          renderItem={renderExerciseItem}
+          contentContainerStyle={styles.listContent}
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -526,6 +673,19 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: theme.spacing.lg,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: theme.colors.muted,
+    textAlign: 'center',
+    marginTop: theme.spacing.md,
+    lineHeight: 22,
   },
   searchAddContainer: {
     flexDirection: 'row',
@@ -640,6 +800,11 @@ const styles = StyleSheet.create({
   itemTextContainer: {
     flex: 1,
   },
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap', // Allow tags to wrap
+    marginTop: 4,
+  },
   itemText: {
     fontSize: 18,
     color: theme.colors.text,
@@ -656,6 +821,11 @@ const styles = StyleSheet.create({
     borderRadius: theme.spacing.xs,
     overflow: 'hidden', // Ensures borderRadius is applied
     alignSelf: 'flex-start', // To make background only wrap text
+  },
+  itemActionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: theme.spacing.sm, // Add a small left margin for separation
   },
   modalContainer: {
     flex: 1,
@@ -733,7 +903,6 @@ const styles = StyleSheet.create({
   paddingHorizontal: 4, // Slightly more horizontal padding
   marginRight: 4,
   marginBottom: 2,
-  alignSelf: 'center', // Center vertically in row
   justifyContent: 'center',
   alignItems: 'center',
   minHeight: 24, // Ensures enough height for pill look

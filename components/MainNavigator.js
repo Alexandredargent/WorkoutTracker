@@ -8,6 +8,7 @@ import DiaryScreen from '../screens/DiaryScreen';
 import StatisticsScreen from '../screens/StatisticsScreen';
 import AccountScreen from '../screens/AccountScreen';
 import MessagesScreen from '../screens/MessagesScreen';
+import ProgramsScreen from '../screens/ProgramsScreen';
 import ChatScreen from '../screens/ChatScreen';
 import NotificationScreen from '../screens/NotificationScreen';
 import { signOut } from 'firebase/auth';
@@ -170,6 +171,8 @@ const MainNavigator = ({ user, setUser, navigation }) => {
               iconName = focused ? 'calendar' : 'calendar-outline';
             } else if (route.name === 'Statistics') {
               iconName = focused ? 'stats-chart' : 'stats-chart-outline';
+            } else if (route.name === 'Programs') {
+              iconName = focused ? 'fitness' : 'fitness-outline';
             } else if (route.name === 'Messages') {
               iconName = focused ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline';
             }
@@ -184,8 +187,8 @@ const MainNavigator = ({ user, setUser, navigation }) => {
       >
         <Tab.Screen name="Home" component={HomeScreen} />
         <Tab.Screen name="Diary" component={DiaryScreen} />
-        
         <Tab.Screen name="Statistics" component={StatisticsScreen} />
+        <Tab.Screen name="Programs" component={ProgramsScreen} />
         <Tab.Screen name="Messages" component={MessagesScreen} />
       </Tab.Navigator>
     </SafeAreaView>

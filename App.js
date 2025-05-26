@@ -12,10 +12,12 @@ import ExerciseListScreen from './screens/ExerciseListScreen';
 import MealListScreen from './screens/MealListScreen';
 import BarcodeScannerScreen from './screens/BarcodeScannerScreen';
 import MessagesScreen from './screens/MessagesScreen';
+import CreateProgramScreen from './screens/CreateProgramScreen';
 import NotificationScreen from './screens/NotificationScreen';
 import ChatScreen from './screens/ChatScreen';
 import { auth } from './services/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
+import ProgramDetailScreen from './screens/ProgramDetailScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -105,6 +107,16 @@ export default function App() {
                         name="ChatScreen" 
                         component={ChatScreen} 
                         options={{ title: 'Chat' }}
+                    />
+                    <Stack.Screen 
+                        name="CreateProgramScreen" 
+                        component={CreateProgramScreen} 
+                        options={{ title: 'Create Program' }}
+                    />
+                    <Stack.Screen 
+                        name="ProgramDetailScreen" 
+                        component={ProgramDetailScreen} 
+                        options={{ title: 'Detail Program' }}
                     />
                     
                 </Stack.Navigator>
