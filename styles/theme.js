@@ -1,9 +1,9 @@
 import { shadow } from 'react-native-paper';
 
 const colors = {
-  primary: '#0e6f8f', // menthe néon
-  card: '#ffffff', // bleu nuit profond pour les cartes
-  background: '#0A0F1C', // fond général //#f2f4f7 blanc
+  primary: '#0e6f8f', // bleu électrique
+  card: '#ffffff', // blanc pour les cartes
+  background: 'black', // fond général 
   text: '#0e6f8f', // texte principal
   muted: '#888',
   accent: '#00B6E0', // bleu électrique
@@ -38,14 +38,16 @@ const typography = {
   
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
     color: colors.primary,
     textAlign: 'center',
+    fontWeight: '600',
   },
   label: {
     fontSize: 16,
     color: colors.text,
+    fontWeight: '800',
+    
   },
   value: {
     fontSize: 16,
