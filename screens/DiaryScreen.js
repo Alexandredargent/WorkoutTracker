@@ -591,11 +591,7 @@ const DiaryScreen = ({ navigation, route }) => {
             />
           
           
-            {loading ? (
-              <View style={styles.centerContent}>
-                <ActivityIndicator size="large" color={theme.colors.primary} />
-              </View>
-            ) : (
+            
               <>
                 <View style={styles.sectionHeader}>
                   <TouchableOpacity
@@ -740,7 +736,7 @@ const DiaryScreen = ({ navigation, route }) => {
                 </TouchableOpacity>
                 <Text style={{ margin: 8, fontStyle: 'italic', color: '#555' }}>{dayComment}</Text>
               </>
-            )}
+            
           </ScrollView>
         </Animated.View>
 

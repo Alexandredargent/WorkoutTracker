@@ -237,13 +237,7 @@ const ProgramsScreen = ({ navigation }) => {
     }
   };
 
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
-  }
+ 
 
   return (
     <ImageBackground
@@ -300,7 +294,10 @@ const ProgramsScreen = ({ navigation }) => {
         />
       )}
     </SafeAreaView>
+    
+
     </ImageBackground>
+    
   );
 };
 
@@ -350,6 +347,8 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 4,
   },
+  
+
   addProgramButtonText: {
     color: 'white',
     fontSize: 16,
@@ -417,7 +416,7 @@ const styles = StyleSheet.create({
     paddingBottom: theme.spacing.lg,
   },
   programItem: {
-    backgroundColor: theme.colors.card,
+    backgroundColor: '#ffff',
     padding: theme.spacing.md,
     borderRadius: theme.card.borderRadius,
     marginBottom: theme.spacing.md,
@@ -432,6 +431,7 @@ const styles = StyleSheet.create({
   },
   itemContent: {
     flexDirection: 'row',
+   
     alignItems: 'center',
     flex: 1,
   },

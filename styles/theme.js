@@ -1,8 +1,10 @@
+import { shadow } from 'react-native-paper';
+
 const colors = {
-  primary: '#00FFC2', // menthe néon
-  card: '#f2f4f7', // bleu nuit profond pour les cartes
+  primary: '#0e6f8f', // menthe néon
+  card: '#ffffff', // bleu nuit profond pour les cartes
   background: '#0A0F1C', // fond général //#f2f4f7 blanc
-  text: '#00FFC2', // texte principal
+  text: '#0e6f8f', // texte principal
   muted: '#888',
   accent: '#00B6E0', // bleu électrique
   error: '#E91E63',
@@ -24,11 +26,16 @@ const fonts = {
 
 const typography = {
   sectionTitleLogo: {
-    fontSize: 60,
+    fontSize: 100,
     fontFamily: fonts.title,
     fontWeight: '600',
-    color: colors.primary,
+    color: '#f7f8fa',
     textAlign: 'center',
+    // Ombre portée
+  textShadowColor: '#000205',
+  textShadowOffset: { width: 4, height: 4 },
+  textShadowRadius: 15,
+  
   },
   sectionTitle: {
     fontSize: 18,
@@ -94,7 +101,16 @@ const input = {
   minWidth: 80,
   height: 40,
 };
-
+const link = {
+    color: '#e4e9eb',
+    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: '900',
+    textShadowColor: '#000205',
+    backgroundColor: '#101924',
+    textShadowOffset: { width: 2, height: 2 },
+  textShadowRadius: 15,
+  };
 const modal = {
   overlay: {
     flex: 1,
@@ -203,6 +219,7 @@ export default {
   button,
   input,
   modal,
+  link,
   nutritionSummaryCard,
   progressBarBackground,
   progressBarFill,

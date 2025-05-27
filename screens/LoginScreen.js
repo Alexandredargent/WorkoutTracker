@@ -70,11 +70,11 @@ const LoginScreen = ({ navigation, setUser }) => {
   >
     <View style={styles.content}>
       <Animated.View style={{ opacity: fadeAnim, alignItems: 'center', width: '100%' }}>
-        <Image
+        {/* <Image
           source={require('../assets/Applogo.png')}
              style={styles.logo}
-        />
-
+        /> */}
+            
         <Text style={styles.title}>Fittrack</Text>
         <View style={styles.inputContainer}>
           <TextInput
@@ -109,7 +109,7 @@ const LoginScreen = ({ navigation, setUser }) => {
           onPress={() => handleNavigation('SignUp')}
           style={styles.linkButton}
         >
-          <Text style={styles.link}>
+          <Text style={theme.link}>
             Don't have an account? Sign Up
           </Text>
         </TouchableOpacity>
@@ -195,11 +195,7 @@ content: {
     marginBottom: theme.spacing.sm,
     textAlign: 'center',
   },
-  link: {
-    color: '#007AFF',
-    textAlign: 'center',
-    fontSize: 16,
-  },
+  
   linkButton: {
     marginTop: theme.spacing.lg,
   },

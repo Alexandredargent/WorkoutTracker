@@ -96,13 +96,42 @@ const HomeScreen = () => {
 
   const getPercent = (value, goal) => goal ? Math.min(100, (value / goal) * 100) : 0;
 
-  if (loading) {
-    return (
-      <View style={styles.container}>
-        <ActivityIndicator size="large" color="#232799" />
-      </View>
-    );
-  }
+  <ImageBackground
+  source={theme.backgroundImage.source}
+  resizeMode={theme.backgroundImage.defaultResizeMode}
+  style={styles.background}
+>
+  <View style={styles.contentWrapper}>
+    {loading && (
+      <ActivityIndicator
+        size="small"
+        color={theme.colors.primary}
+        style={{ marginBottom: 10 }}
+      />
+    )}
+
+    <Text style={styles.welcomeText}>Hello, ready for today's progress?</Text>
+    {userInfo && (
+      <>
+        <Text style={styles.goalText}>🎯 Goal: {getGoalLabel(userInfo.goal)}</Text>
+        <Text style={styles.goalText}>⚡ Activity: {getActivityLabel(userInfo.activityLevel)}</Text>
+      </>
+    )}
+
+    <NutritionSummary
+      totalCalories={totalCalories}
+      calorieGoal={calorieGoal}
+      totalProteins={totalProteins}
+      proteinGoal={proteinGoal}
+      totalCarbs={totalCarbs}
+      carbGoal={carbGoal}
+      totalLipids={totalLipids}
+      lipidGoal={lipidGoal}
+      getPercent={getPercent}
+    />
+  </View>
+</ImageBackground>
+
 
   return (
     <ImageBackground

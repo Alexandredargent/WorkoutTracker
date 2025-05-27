@@ -110,6 +110,7 @@ const CreateProgramScreen = ({ navigation, route }) => {
         <TextInput
           style={styles.exerciseDetailInput}
           placeholder="Sets (e.g., 3)"
+          placeholderTextColor={theme.colors.card} 
           value={item.sets}
           onChangeText={text => handleUpdateExerciseDetail(item.id, 'sets', text)}
           keyboardType="numeric"
@@ -118,6 +119,7 @@ const CreateProgramScreen = ({ navigation, route }) => {
         <TextInput
           style={styles.exerciseDetailInput}
           placeholder="Reps (e.g., 10-12)"
+          placeholderTextColor={theme.colors.card} 
           value={item.reps}
           onChangeText={text => handleUpdateExerciseDetail(item.id, 'reps', text)}
           blurOnSubmit={false}
@@ -126,6 +128,7 @@ const CreateProgramScreen = ({ navigation, route }) => {
       <TextInput
         style={[styles.exerciseDetailInput, styles.notesInput]}
         placeholder="Notes (optional)"
+        placeholderTextColor={theme.colors.card} 
         value={item.notes}
         onChangeText={text => handleUpdateExerciseDetail(item.id, 'notes', text)}
         multiline
@@ -173,7 +176,7 @@ const CreateProgramScreen = ({ navigation, route }) => {
             onChangeText={setProgramDescription}
             multiline
             numberOfLines={3}
-            placeholderTextColor={theme.colors.muted}
+            placeholderTextColor={theme.colors.muted} 
             blurOnSubmit={false}
             returnKeyType="done"
           />

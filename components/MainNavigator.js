@@ -162,29 +162,32 @@ const MainNavigator = ({ user, setUser, navigation }) => {
 
       {/* bottom tab navigation */}
       <Tab.Navigator
-        screenOptions={({ route }) => ({
-          tabBarIcon: ({ focused, color, size }) => {
-            let iconName;
-            if (route.name === 'Home') {
-              iconName = focused ? 'home' : 'home-outline';
-            } else if (route.name === 'Diary') {
-              iconName = focused ? 'calendar' : 'calendar-outline';
-            } else if (route.name === 'Statistics') {
-              iconName = focused ? 'stats-chart' : 'stats-chart-outline';
-            } else if (route.name === 'Programs') {
-              iconName = focused ? 'fitness' : 'fitness-outline';
-            } else if (route.name === 'Messages') {
-              iconName = focused ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline';
-            }
-            return <Ionicons name={iconName} size={size} color={color} />;
-          },
-          tabBarActiveTintColor: theme.colors.primary,
-          tabBarInactiveTintColor: 'gray',
-          tabBarStyle: styles.tabBar,
-          tabBarLabelStyle: styles.tabBarLabel,
-          headerShown: false,
-        })}
-      >
+  screenOptions={({ route }) => ({
+    tabBarIcon: ({ focused, color, size }) => {
+      let iconName;
+      if (route.name === 'Home') {
+        iconName = focused ? 'home' : 'home-outline';
+      } else if (route.name === 'Diary') {
+        iconName = focused ? 'calendar' : 'calendar-outline';
+      } else if (route.name === 'Statistics') {
+        iconName = focused ? 'stats-chart' : 'stats-chart-outline';
+      } else if (route.name === 'Programs') {
+        iconName = focused ? 'fitness' : 'fitness-outline';
+      } else if (route.name === 'Messages') {
+        iconName = focused ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline';
+      }
+      return <Ionicons name={iconName} size={size} color={color} />;
+    },
+    tabBarActiveTintColor: theme.colors.primary,
+    tabBarInactiveTintColor: 'gray',
+    tabBarStyle: styles.tabBar,
+    tabBarLabelStyle: styles.tabBarLabel,
+    headerShown: false,
+  })}
+  lazy={true} // charge les écrans à la demande
+  sceneContainerStyle={{ backgroundColor: theme.colors.background }} // évite les flashs blancs entre transitions
+>
+
         <Tab.Screen name="Home" component={HomeScreen} />
         <Tab.Screen name="Diary" component={DiaryScreen} />
         <Tab.Screen name="Statistics" component={StatisticsScreen} />

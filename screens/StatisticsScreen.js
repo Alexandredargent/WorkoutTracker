@@ -56,13 +56,12 @@ const StatisticsScreen = () => {
     }, [])
   );
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#232799" />
-      </View>
-    );
-  }
+  {loading && (
+  <View style={styles.loadingOverlay}>
+    <ActivityIndicator size="large" color="#232799" />
+  </View>
+)}
+
 
   const currentDate = new Date();
   const monthlyLabels = [];
