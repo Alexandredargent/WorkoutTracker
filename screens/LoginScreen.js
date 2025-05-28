@@ -75,7 +75,10 @@ const LoginScreen = ({ navigation, setUser }) => {
              style={styles.logo}
         /> */}
             
-        <Text style={styles.title}>FitTrack</Text>
+
+
+        <Image source={require('../assets/appTitleText.png')} style={{ width: 300, height: 300 }} />
+    
         <View style={styles.inputContainer}>
           <TextInput
             placeholder="Email"
@@ -112,10 +115,14 @@ const LoginScreen = ({ navigation, setUser }) => {
           <Text style={theme.link}>
             Don't have an account? Sign Up
           </Text>
+
         </TouchableOpacity>
+        
       </Animated.View>
     </View>
+    
   </KeyboardAvoidingView>
+  <Image source={require('../assets/character1.png')} style={{ width: 200, height: 300 ,left: 200}} />
 </ImageBackground>
 
 

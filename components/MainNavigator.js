@@ -172,7 +172,7 @@ const MainNavigator = ({ user, setUser, navigation }) => {
       } else if (route.name === 'Statistics') {
         iconName = focused ? 'stats-chart' : 'stats-chart-outline';
       } else if (route.name === 'Programs') {
-        iconName = focused ? 'fitness' : 'fitness-outline';
+        iconName = focused ? 'book' : 'book-outline';
       } else if (route.name === 'Messages') {
         iconName = focused ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline';
       }

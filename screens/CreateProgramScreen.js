@@ -1,8 +1,13 @@
 // d:\Applications\WorkoutTracker\screens\CreateProgramScreen.js
 import React, { useState, useEffect, useCallback } from 'react';
+import { getMuscleIcon } from '../utils/muscleIcons';
+
+
+
 import {
   View,
   Text,
+  Image,
   TextInput,
   StyleSheet,
   SafeAreaView,
@@ -62,55 +67,100 @@ const CreateProgramScreen = ({ navigation, route }) => {
   }, []);
 
   const handleSaveProgram = async () => {
-    if (!programName.trim()) {
-      Alert.alert('Error', 'Please enter a name for your program.');
-      return;
-    }
-    if (selectedExercises.length === 0) {
-      Alert.alert('Error', 'Please add at least one exercise to your program.');
-      return;
-    }
+  if (!programName.trim()) {
+    Alert.alert('Error', 'Please enter a name for your program.');
+    return;
+  }
+  if (selectedExercises.length === 0) {
+    Alert.alert('Error', 'Please add at least one exercise to your program.');
+    return;
+  }
 
-    const userId = auth.currentUser?.uid;
-    if (!userId) {
-      Alert.alert('Error', 'User not logged in.');
-      return;
-    }
+  const userId = auth.currentUser?.uid;
+  if (!userId) {
+    Alert.alert('Error', 'User not logged in.');
+    return;
+  }
 
-    setIsLoading(true);
-    const programData = {
-      name: programName.trim(),
-      description: programDescription.trim(),
-      exercises: selectedExercises.map(ex => ({
-        exerciseId: ex.id, // The ID of the original exercise
-        name: ex.Name,     // The name of the exercise
-        sets: ex.sets || '3', // Default or entered value
-        reps: ex.reps || '10', // Default or entered value
-        notes: ex.notes || '',
-      })),
-      // createdAt and updatedAt will be handled by addUserProgram
-    };
-
-    try {
-      await addUserProgram(userId, programData);
-      Alert.alert('Success', 'Program saved successfully!');
-      navigation.goBack(); // Or navigate to the updated programs screen
-    } catch (error) {
-      console.error('Error saving program:', error);
-      Alert.alert('Error', 'Could not save program.');
-    } finally {
-      setIsLoading(false);
+  setIsLoading(true);
+  const programData = {
+    name: programName.trim(),
+    description: programDescription.trim(),
+    exercises: selectedExercises.map(ex => {
+  const exerciseObj = {
+    exerciseId: ex.id || '',
+    name: ex.name || ex.Name || '', // accepte name OU Name
+    "Target Muscle Group": ex["Target Muscle Group"] || '',
+    "Primary Equipment": ex["Primary Equipment"] || '',
+    "Difficulty Level": ex["Difficulty Level"] || '',
+    sets: ex.sets || '3',
+    reps: ex.reps || '10',
+    notes: ex.notes || '',
+  };
+  // Supprime tout champ encore undefined, au cas où
+  Object.keys(exerciseObj).forEach(key => {
+    if (exerciseObj[key] === undefined) {
+      exerciseObj[key] = '';
     }
+  });
+  return exerciseObj;
+}),
+
   };
 
-  const renderExerciseItem = useCallback(({ item }) => (
+  try {
+    console.log('Will save program with data:', programData);
+
+    await addUserProgram(userId, programData);
+    Alert.alert('Success', 'Program saved successfully!');
+    navigation.goBack();
+  } catch (error) {
+    console.error('Error saving program:', error);
+    Alert.alert('Error', 'Could not save program.');
+  } finally {
+    setIsLoading(false);
+  }
+};
+  
+  const renderExerciseItem = useCallback(({ item }) => {
+  const targetMuscleGroup = item["Target Muscle Group"] || item.targetMuscleGroup || '';
+  const imageSource = getMuscleIcon(targetMuscleGroup);
+
+  return (
     <View style={styles.exerciseItemContainer}>
-      <Text style={styles.exerciseName}>{item.Name}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <Image source={imageSource} style={{ width: 60, height: 60, marginRight: 12 }} resizeMode="contain" />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.exerciseName}>{item.Name || item.name || 'Unnamed'}</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 }}>
+            {targetMuscleGroup ? (
+              <View style={styles.tag}>
+                <Text style={styles.tagText}>{targetMuscleGroup}</Text>
+              </View>
+            ) : null}
+            {(item["Primary Equipment"] || item.primaryEquipment) ? (
+              <View style={styles.tag}>
+                <Text style={styles.tagText}>{item["Primary Equipment"] || item.primaryEquipment}</Text>
+              </View>
+            ) : null}
+            {(item["Difficulty Level"] || item.difficultyLevel) ? (
+              <View style={styles.tag}>
+                <Text style={styles.tagText}>{item["Difficulty Level"] || item.difficultyLevel}</Text>
+              </View>
+            ) : null}
+          </View>
+        </View>
+        <TouchableOpacity onPress={() => handleRemoveExercise(item.id)} style={styles.removeExerciseButton}>
+          <Ionicons name="trash-outline" size={20} color={theme.colors.error} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Rest of the component remains the same */}
       <View style={styles.exerciseInputs}>
         <TextInput
           style={styles.exerciseDetailInput}
           placeholder="Sets (e.g., 3)"
-          placeholderTextColor={theme.colors.card} 
+          placeholderTextColor={theme.colors.card}
           value={item.sets}
           onChangeText={text => handleUpdateExerciseDetail(item.id, 'sets', text)}
           keyboardType="numeric"
@@ -119,7 +169,7 @@ const CreateProgramScreen = ({ navigation, route }) => {
         <TextInput
           style={styles.exerciseDetailInput}
           placeholder="Reps (e.g., 10-12)"
-          placeholderTextColor={theme.colors.card} 
+          placeholderTextColor={theme.colors.card}
           value={item.reps}
           onChangeText={text => handleUpdateExerciseDetail(item.id, 'reps', text)}
           blurOnSubmit={false}
@@ -128,17 +178,15 @@ const CreateProgramScreen = ({ navigation, route }) => {
       <TextInput
         style={[styles.exerciseDetailInput, styles.notesInput]}
         placeholder="Notes (optional)"
-        placeholderTextColor={theme.colors.card} 
+        placeholderTextColor={theme.colors.card}
         value={item.notes}
         onChangeText={text => handleUpdateExerciseDetail(item.id, 'notes', text)}
         multiline
         blurOnSubmit={false}
       />
-      <TouchableOpacity onPress={() => handleRemoveExercise(item.id)} style={styles.removeExerciseButton}>
-        <Ionicons name="trash-outline" size={20} color={theme.colors.error} />
-      </TouchableOpacity>
     </View>
-  ), [handleUpdateExerciseDetail, handleRemoveExercise]);
+  );
+}, [handleUpdateExerciseDetail, handleRemoveExercise]);
 
   const renderListFooter = useCallback(() => (
     <View style={styles.form}> 

@@ -40,7 +40,7 @@ const fonts = {
 
 const typography = {
   sectionTitleLogo: {
-    fontSize: 100,
+    fontSize: 60,
     fontFamily: fonts.title,
     fontWeight: '600',
     color: '#f7f8fa',

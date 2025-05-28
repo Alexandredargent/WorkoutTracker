@@ -8,6 +8,7 @@ import {
   FlatList,
   ActivityIndicator,
   Alert,
+  Image,
   TextInput,
   Modal,
   ScrollView,
@@ -19,6 +20,40 @@ import { auth } from '../services/firebase';
 import { applyProgramToDate } from '../services/diaryService';
 
 import { useFocusEffect } from '@react-navigation/native';
+function normalizeExerciseFields(ex) {
+  return {
+    exerciseId: ex.exerciseId || ex.id,
+    name: ex.name || ex.Name || 'Unnamed',
+    targetMuscleGroup: ex.targetMuscleGroup || ex["Target Muscle Group"] || '',
+    primaryEquipment: ex.primaryEquipment || ex["Primary Equipment"] || '',
+    difficultyLevel: ex.difficultyLevel || ex["Difficulty Level"] || '',
+    sets: ex.sets || '3',
+    reps: ex.reps || '10',
+    notes: ex.notes || '',
+  };
+}
+
+
+const muscleIcons = {
+  Abdominals: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Rectus Abdominus.png'),
+  Abductors: require('../assets/Backbodymuscles_EPS_PNG_SVG/PNG files/Gluteus medius.png'),
+  Adductors: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Adductor Longus and Pectineus.png'),
+  Back: require('../assets/Backbodymuscles_EPS_PNG_SVG/PNG files/Lattisimus dorsi.png'),
+  Biceps: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Biceps brachii.png'),
+  Calves: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Gastrocnemius (calf).png'),
+  Chest: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Pectoralis Major.png'),
+  Forearms: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Brachioradialis.png'),
+  Glutes: require('../assets/Backbodymuscles_EPS_PNG_SVG/PNG files/Gluteus maximus.png'),
+  Hamstrings: require('../assets/Backbodymuscles_EPS_PNG_SVG/PNG files/Biceps fermoris.png'),
+  "Hip Flexors": require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Sartorius.png'),
+  Neck: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Omohyoid.png'),
+  Quadriceps: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Rectus femoris.png'),
+  Shins: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Soleus.png'),
+  Shoulders: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Deltoids.png'),
+  Trapezius: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Trapezius.png'),
+  Triceps: require('../assets/Backbodymuscles_EPS_PNG_SVG/PNG files/Triceps Brachii ( long head, lateral head ).png'),
+  Default: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Body black outline with white background.png'),
+};
 
 const ProgramDetailScreen = ({ navigation, route }) => {
   const { programId, programName } = route.params;
@@ -45,7 +80,11 @@ const ProgramDetailScreen = ({ navigation, route }) => {
     setIsLoading(true);
     try {
       const programData = await fetchUserProgram(userId, programId);
-      setProgram(programData);
+      setProgram({
+  ...programData,
+  exercises: Array.isArray(programData.exercises) ? programData.exercises : [],
+});
+
       setEditedProgram({
         name: programData.name || '',
         description: programData.description || '',
@@ -190,49 +229,77 @@ const ProgramDetailScreen = ({ navigation, route }) => {
     });
   };
 
-  // Handle exercise selection from ExerciseListScreen
-  useEffect(() => {
-    if (route.params?.selectedExerciseForProgram) {
-      const newExercise = route.params.selectedExerciseForProgram;
-      
-      // Check if exercise is already in the program
-      if (!program.exercises.find(ex => ex.exerciseId === newExercise.id)) {
-        const exerciseToAdd = {
-          exerciseId: newExercise.id,
-          name: newExercise.Name,
-          sets: '3',
-          reps: '10',
-          notes: '',
-        };
+useEffect(() => {
+  if (route.params?.selectedExerciseForProgram && program) {
+    const newExercise = route.params.selectedExerciseForProgram;
 
-        const updatedProgram = {
-          ...program,
-          exercises: [...program.exercises, exerciseToAdd],
-          updatedAt: new Date().toISOString(),
-        };
+    // Toujours travailler sur un tableau propre et normalisé
+    const currentExercises = Array.isArray(program.exercises) ? program.exercises.map(normalizeExerciseFields) : [];
 
-        updateUserProgram(userId, programId, updatedProgram)
-          .then(() => {
-            setProgram(updatedProgram);
-            Alert.alert('Success', 'Exercise added to program!');
-          })
-          .catch((error) => {
-            console.error('Error adding exercise:', error);
-            Alert.alert('Error', 'Failed to add exercise to program.');
-          });
-      } else {
-        Alert.alert('Info', 'This exercise is already in the program.');
-      }
+    if (!currentExercises.find(ex => ex.exerciseId === newExercise.id)) {
+      // On ajoute l'exercice normalisé à la liste normalisée
+      const updatedExercises = [
+        ...currentExercises,
+        normalizeExerciseFields(newExercise)
+      ];
 
-      // Clear the param
-      navigation.setParams({ selectedExerciseForProgram: null });
+      const updatedProgram = {
+        ...program,
+        exercises: updatedExercises,
+        updatedAt: new Date().toISOString(),
+      };
+
+      updateUserProgram(userId, programId, updatedProgram)
+        .then(() => {
+          setProgram(updatedProgram);
+          Alert.alert('Success', 'Exercise added to program!');
+        })
+        .catch((error) => {
+          console.error('Error adding exercise:', error);
+          Alert.alert('Error', 'Failed to add exercise to program.');
+        });
+    } else {
+      Alert.alert('Info', 'This exercise is already in the program.');
     }
-  }, [route.params?.selectedExerciseForProgram, program, userId, programId, navigation]);
 
-  const renderExerciseItem = ({ item, index }) => (
+    // Clear the param
+    navigation.setParams({ selectedExerciseForProgram: null });
+  }
+}, [route.params?.selectedExerciseForProgram, program, userId, programId, navigation]);
+
+
+  const renderExerciseItem = ({ item, index }) => {
+  const imageSource = muscleIcons[item.targetMuscleGroup] || muscleIcons.Default;
+
+  return (
     <View style={styles.exerciseItem}>
-      <View style={styles.exerciseHeader}>
-        <Text style={styles.exerciseName}>{item.name}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <Image
+          source={imageSource}
+          style={{ width: 60, height: 60, marginRight: 12 }}
+          resizeMode="contain"
+        />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.exerciseName}>{item.name}</Text>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 }}>
+            {item.targetMuscleGroup ? (
+              <View style={styles.tag}>
+                <Text style={styles.tagText}>{item.targetMuscleGroup}</Text>
+              </View>
+            ) : null}
+            {item.primaryEquipment ? (
+              <View style={styles.tag}>
+                <Text style={styles.tagText}>{item.primaryEquipment}</Text>
+              </View>
+            ) : null}
+            {item.difficultyLevel ? (
+              <View style={styles.tag}>
+                <Text style={styles.tagText}>{item.difficultyLevel}</Text>
+              </View>
+            ) : null}
+          </View>
+        </View>
+
         <View style={styles.exerciseActions}>
           <TouchableOpacity
             onPress={() => handleEditExercise(item, index)}
@@ -248,7 +315,7 @@ const ProgramDetailScreen = ({ navigation, route }) => {
           </TouchableOpacity>
         </View>
       </View>
-      
+
       <View style={styles.exerciseDetails}>
         <View style={styles.exerciseDetailRow}>
           <Text style={styles.exerciseDetailLabel}>Sets:</Text>
@@ -267,6 +334,9 @@ const ProgramDetailScreen = ({ navigation, route }) => {
       </View>
     </View>
   );
+};
+
+
 
   if (isLoading) {
     return (
@@ -365,9 +435,7 @@ const ProgramDetailScreen = ({ navigation, route }) => {
       <View style={styles.exercisesSection}>
         <View style={styles.exercisesSectionHeader}>
           <Text style={styles.exercisesSectionTitle}>Exercises</Text>
-          <TouchableOpacity onPress={handleAddExercise} style={styles.addExerciseButton}>
-            <Ionicons name="add-circle-outline" size={24} color={theme.colors.primary} />
-          </TouchableOpacity>
+          
         </View>
 
         {program.exercises && program.exercises.length > 0 ? (
@@ -486,6 +554,20 @@ const ProgramDetailScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
+  tag: {
+    backgroundColor: theme.colors.primary,
+    borderRadius: 999,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    marginRight: 4,
+    marginBottom: 2,
+  },
+  tagText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
