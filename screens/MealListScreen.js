@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, TouchableOpacity, SafeAreaView, StatusBar, ActivityIndicator, StyleSheet, Alert } from 'react-native';
-import { fetchMeals, addUserMeal, fetchUserMeals, deleteUserMeal } from '../services/firebaseMealService.js';
+import { fetchMeals, addUserMeal, fetchUserMeals, deleteUserMeal, toggleFavoriteMeal, fetchFavoriteMeals } from '../services/firebaseMealService.js';
 import { addMealToDiary } from '../services/diaryService';
 import { auth } from '../services/firebase';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,34 +21,86 @@ const MealListScreen = ({ navigation, route }) => {
   lipids: '',
   proteins: '',
   });
+  const [favoriteMeals, setFavoriteMeals] = useState([]);
+  const getEmptyStateText = () => {
+  if (searchQuery.trim()) {
+    return 'No meals found matching your search.';
+  }
+  switch (filter) {
+    case 'created':
+      return 'You haven\'t created any meals yet. Tap \'+\' to create your first meal.';
+    case 'favorites':
+      return 'You haven\'t favorited any meals yet. Browse meals and tap the heart icon to add them to favorites.';
+    default: // 'all'
+      return 'No meals available. Tap \'+\' to create your first meal.';
+  }
+};
 
   const loadMeals = useCallback(async () => {
     try {
       setLoading(true);
       const user = auth.currentUser;
-      let userMeals = [];
-      if (user) {
-        userMeals = await fetchUserMeals(user.uid);
+      
+      if (filter === 'favorites') {
+        // Load favorite meals
+        if (user) {
+          const favMeals = await fetchFavoriteMeals(user.uid);
+          setMeals(favMeals);
+        }
+      } else {
+        // Load regular meals
+        let userMeals = [];
+        if (user) {
+          userMeals = await fetchUserMeals(user.uid);
+        }
+        const globalMeals = await fetchMeals();
+        // Merge and remove duplicates by name
+        const allMeals = [
+          ...userMeals,
+          ...globalMeals.filter(gm => !userMeals.some(um => um.name === gm.name))
+        ];
+        setMeals(allMeals);
       }
-      const globalMeals = await fetchMeals();
-      // Merge and remove duplicates by name (or id if you prefer)
-      const allMeals = [
-        ...userMeals,
-        ...globalMeals.filter(gm => !userMeals.some(um => um.name === gm.name))
-      ];
-      setMeals(allMeals);
+
+      // Load favorite meal IDs for heart icons
+      if (user && filter !== 'favorites') {
+        const favMeals = await fetchFavoriteMeals(user.uid);
+        setFavoriteMeals(favMeals.map(meal => meal.id));
+      }
     } catch (error) {
       console.error('Error fetching meals:', error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filter]);
 
   useEffect(() => {
     loadMeals();
   }, [loadMeals]);
 
+  const handleToggleFavorite = async (mealId, isCurrentlyFavorite) => {
+  const user = auth.currentUser;
+  if (!user) {
+    Alert.alert("Error", "Please log in to favorite meals.");
+    return;
+  }
 
+  try {
+    await toggleFavoriteMeal(user.uid, mealId, !isCurrentlyFavorite);
+    
+    if (isCurrentlyFavorite) {
+      setFavoriteMeals(prev => prev.filter(id => id !== mealId));
+      if (filter === 'favorites') {
+        setMeals(prev => prev.filter(meal => meal.id !== mealId));
+      }
+    } else {
+      setFavoriteMeals(prev => [...prev, mealId]);
+    }
+  } catch (error) {
+    console.error("Failed to toggle favorite:", error);
+    Alert.alert("Error", "Unable to update favorite status.");
+  }
+};
   const getFilteredMeals = useCallback(() => {
     let filtered = [...meals];
 
@@ -85,58 +137,70 @@ const MealListScreen = ({ navigation, route }) => {
   };
 
   const renderMealItem = ({ item }) => {
-    const user = auth.currentUser;
-    const isCreatedByUser = item.uid === user?.uid;
+  const user = auth.currentUser;
+  const isCreatedByUser = item.uid === user?.uid;
+  const isFavorite = favoriteMeals.includes(item.id);
 
-    const handleDelete = () => {
-      Alert.alert(
-        "Delete Meal",
-        "Are you sure you want to delete this meal?",
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Delete",
-            style: "destructive",
-            onPress: async () => {
-              try {
-                await deleteUserMeal(user.uid, item.id);
-                setMeals(prev => prev.filter(meal => meal.id !== item.id));
-              } catch (error) {
-                alert('Failed to delete meal.');
-              }
+  const handleDelete = () => {
+    Alert.alert(
+      "Delete Meal",
+      "Are you sure you want to delete this meal?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteUserMeal(user.uid, item.id);
+              setMeals(prev => prev.filter(meal => meal.id !== item.id));
+            } catch (error) {
+              alert('Failed to delete meal.');
             }
           }
-        ]
-      );
-    };
-
-    return (
-      <TouchableOpacity
-        style={styles.item}
-        onPress={() => handleAddMeal(item)}
-      >
-        <View style={styles.itemContent}>
-          <Ionicons name="restaurant-outline" size={24} color={theme.colors.primary} style={styles.itemIcon} />
-          <View style={styles.itemTextContainer}>
-            <Text style={styles.itemText}>{item.name}</Text>
-            <Text style={styles.caloriesText}>{item.calories} calories</Text>
-            <Text style={styles.caloriesText}>{item.carbs} carbs</Text>
-            <Text style={styles.caloriesText}>{item.lipids} lipids</Text>
-            <Text style={styles.caloriesText}>{item.proteins} proteins</Text>
-            {item.isPopular && <Text style={styles.popularTag}>Popular</Text>}
-          </View>
-        </View>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Ionicons name="add-circle-outline" size={24} color={theme.colors.primary} />
-          {isCreatedByUser && (
-            <TouchableOpacity onPress={handleDelete} style={{ marginLeft: 12 }}>
-              <Ionicons name="trash-outline" size={24} color="red" />
-            </TouchableOpacity>
-          )}
-        </View>
-      </TouchableOpacity>
+        }
+      ]
     );
   };
+
+  return (
+    <TouchableOpacity
+      style={styles.item}
+      onPress={() => handleAddMeal(item)}
+    >
+      <View style={styles.itemContent}>
+        <Ionicons name="restaurant-outline" size={24} color={theme.colors.primary} style={styles.itemIcon} />
+        <View style={styles.itemTextContainer}>
+          <Text style={styles.itemText}>{item.name}</Text>
+          <Text style={styles.caloriesText}>{item.calories} calories</Text>
+          <Text style={styles.caloriesText}>{item.carbs} carbs</Text>
+          <Text style={styles.caloriesText}>{item.lipids} lipids</Text>
+          <Text style={styles.caloriesText}>{item.proteins} proteins</Text>
+          {item.isPopular && <Text style={styles.popularTag}>Popular</Text>}
+        </View>
+      </View>
+      <View style={styles.itemActionsContainer}>
+        <TouchableOpacity 
+          onPress={() => handleToggleFavorite(item.id, isFavorite)} 
+          style={{ marginRight: 12 }}
+        >
+          <Ionicons 
+            name={isFavorite ? "heart" : "heart-outline"} 
+            size={24} 
+            color={isFavorite ? theme.colors.error : theme.colors.muted} 
+          />
+        </TouchableOpacity>
+        <Ionicons name="add-circle-outline" size={24} color={theme.colors.primary} />
+        {isCreatedByUser && (
+          <TouchableOpacity onPress={handleDelete} style={{ marginLeft: 12 }}>
+            <Ionicons name="trash-outline" size={24} color="red" />
+          </TouchableOpacity>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+};
+
   
   const renderTabButton = (tabName, label) => (
     <TouchableOpacity 
@@ -246,9 +310,11 @@ if (user) {
         placeholderTextColor={theme.colors.muted}
       />
       <View style={styles.tabs}>
-        {renderTabButton('all', 'All Meals')}
-        {renderTabButton('created', 'Created')}
-      </View>
+  {renderTabButton('all', 'All Meals')}
+  {renderTabButton('favorites', 'Favorites')}
+  {renderTabButton('created', 'Created')}
+</View>
+
 
       <FlatList
         data={getFilteredMeals()}
@@ -266,6 +332,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background,
   },
+  itemActionsContainer: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginLeft: theme.spacing.sm,
+},
+
   topButtonsContainer: {
     flexDirection: 'row',
     // justifyContent: 'space-around', // No longer needed as flex:1 on children and gap will manage distribution
