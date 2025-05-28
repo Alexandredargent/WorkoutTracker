@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ImageBackground, ActivityIndicator } from 'react-native';
 import { auth, db } from '../services/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import DiaryHeaderToday from '../components/DiaryHeaderToday';
 
 import {
   calculateCalorieTarget,
@@ -96,41 +97,9 @@ const HomeScreen = () => {
 
   const getPercent = (value, goal) => goal ? Math.min(100, (value / goal) * 100) : 0;
 
-  <ImageBackground
-  source={theme.backgroundImage.source}
-  resizeMode={theme.backgroundImage.defaultResizeMode}
-  style={styles.background}
->
-  <View style={styles.contentWrapper}>
-    {loading && (
-      <ActivityIndicator
-        size="small"
-        color={theme.colors.primary}
-        style={{ marginBottom: 10 }}
-      />
-    )}
-
-    <Text style={styles.welcomeText}>Hello, ready for today's progress?</Text>
-    {userInfo && (
-      <>
-        <Text style={styles.goalText}>🎯 Goal: {getGoalLabel(userInfo.goal)}</Text>
-        <Text style={styles.goalText}>⚡ Activity: {getActivityLabel(userInfo.activityLevel)}</Text>
-      </>
-    )}
-
-    <NutritionSummary
-      totalCalories={totalCalories}
-      calorieGoal={calorieGoal}
-      totalProteins={totalProteins}
-      proteinGoal={proteinGoal}
-      totalCarbs={totalCarbs}
-      carbGoal={carbGoal}
-      totalLipids={totalLipids}
-      lipidGoal={lipidGoal}
-      getPercent={getPercent}
-    />
-  </View>
-</ImageBackground>
+ 
+  
+  
 
 
   return (
@@ -148,6 +117,7 @@ const HomeScreen = () => {
             <Text style={styles.goalText}>⚡ Activity: {getActivityLabel(userInfo.activityLevel)}</Text>
           </>
         )}
+        <DiaryHeaderToday />
         <NutritionSummary
           totalCalories={totalCalories}
           calorieGoal={calorieGoal}
@@ -173,7 +143,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: theme.spacing.lg,
-    backgroundColor: 'rgba(255, 255, 255, 0.26)',
+    
   },
   logo: {
     width: 200,
@@ -200,6 +170,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
+  
 });
 
 export default HomeScreen;

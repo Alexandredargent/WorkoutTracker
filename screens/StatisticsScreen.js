@@ -173,7 +173,7 @@ const StatisticsScreen = () => {
 const styles = StyleSheet.create({
   container: {
   padding: theme.spacing.lg,
-  backgroundColor: 'rgba(255, 255, 255, 0.26)',
+  //backgroundColor: 'rgba(255, 255, 255, 0.26)',
 },
 
   title: {

@@ -1,5 +1,19 @@
 import { shadow } from 'react-native-paper';
+// #175c5b
+//background #e5d1b0 #59a496
 
+const colors = {
+  primary: '#175c5b', // bleu électrique
+  card: '#ffffff', // blanc pour les cartes
+  background: 'rgb(255, 234, 200)', // fond général 
+  text: ' #59a496', // texte principal
+  muted: '#888',
+  accent: '#00B6E0', // bleu électrique
+  error: '#E91E63',
+  border: '#00B6E0',
+  shadow: '#000',
+};
+/*  //Ui V1
 const colors = {
   primary: '#0e6f8f', // bleu électrique
   card: '#ffffff', // blanc pour les cartes
@@ -11,7 +25,7 @@ const colors = {
   border: '#00B6E0',
   shadow: '#000',
 };
-
+*/
 const spacing = {
   xs: 4,
   sm: 8,
@@ -77,7 +91,7 @@ const sectionHeader = {
   flexDirection: 'row',
   alignItems: 'center',
   justifyContent: 'center',
-  backgroundColor: '#101924',
+  backgroundColor: '#56a092',
   paddingHorizontal: spacing.md,
   paddingVertical: spacing.md,
   marginHorizontal: spacing.md,
@@ -143,7 +157,7 @@ const modal = {
   input: {
     width: '100%',
     height: 40,
-    backgroundColor: '#1B2430',
+    backgroundColor: 'rgb(255, 234, 200)',
     borderRadius: 8,
     paddingHorizontal: spacing.md,
     marginBottom: spacing.md,
@@ -204,7 +218,14 @@ const progressBarFill = {
 };
 
 const backgroundImage = {
-  source: require('../assets/appLogov2.png'),
+  source: require('../assets/Backgroundv6.png'),
+  style: {
+    flex: 1,
+  },
+  defaultResizeMode: 'cover',
+};
+const appBackgroundLogin = {
+  source: require('../assets/Backgroundv6.png'),
   style: {
     flex: 1,
   },
@@ -226,4 +247,5 @@ export default {
   progressBarBackground,
   progressBarFill,
   backgroundImage,
+  appBackgroundLogin,
 };

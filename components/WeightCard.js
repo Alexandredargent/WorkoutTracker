@@ -5,20 +5,17 @@ import theme from '../styles/theme';
 
 const WeightCard = ({ item, onEdit, isEditable = true }) => (
   <View style={styles.card}>
-    <View style={styles.cardRow}>
+    <View style={styles.centeredContainer}>
       <Text style={styles.cardTitle}>{item.weight} kg</Text>
-      <TouchableOpacity
-        style={[styles.updateButton, !isEditable && styles.disabledIconStyle]}
-        onPress={onEdit} // The parent (DiaryScreen) already provides the correct onEdit behavior
-        disabled={!isEditable}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-      >
-        <Ionicons
-          name="pencil-outline"
-          size={24}
-          color={isEditable ? theme.colors.primary : (theme.colors.disabledText || '#cccccc')}
-        />
-      </TouchableOpacity>
+      {isEditable && (
+        <TouchableOpacity
+          style={styles.editButton}
+          onPress={onEdit}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="pencil-outline" size={30} color={theme.colors.primary} />
+        </TouchableOpacity>
+      )}
     </View>
   </View>
 );
@@ -26,24 +23,27 @@ const WeightCard = ({ item, onEdit, isEditable = true }) => (
 const styles = StyleSheet.create({
   card: {
     ...theme.card,
-  },
-  cardRow: {
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
+  },
+  centeredContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+    width: '100%',
+    paddingVertical: 12,
   },
   cardTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
     color: theme.colors.text,
-    marginLeft: 12,
-    flex: 1,
+    textAlign: 'center',
   },
-  updateButton: {
-    padding: 4,
-  },
-  disabledIconStyle: {
-    opacity: 0.5, // Visually indicate that the button is less interactive
+  editButton: {
+    position: 'absolute',
+    right: 16, // adapte selon ton padding/marge du card
+    top: '50%',
+    transform: [{ translateY: -10 }],
   },
 });
 

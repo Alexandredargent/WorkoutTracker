@@ -39,21 +39,22 @@ const ExerciseCard = ({
     <View style={styles.setInputContainer}>
       <View style={{ flex: 1, alignItems: 'center' }} />
       <TextInput
-        style={styles.input}
-        placeholder="Reps"
-        value={reps}
-        onChangeText={setReps}
-        onFocus={onInputFocus}
-        keyboardType="numeric"
-      />
-      <TextInput
-        style={styles.input}
-        placeholder="Weight"
-        value={weight}
-        onChangeText={setWeight}
-        onFocus={onInputFocus}
-        keyboardType="numeric"
-      />
+  style={styles.exerciseInput}
+  placeholder="Reps"
+  value={reps}
+  onChangeText={setReps}
+  onFocus={onInputFocus}
+  keyboardType="numeric"
+/>
+<TextInput
+  style={styles.exerciseInput}
+  placeholder="Weight"
+  value={weight}
+  onChangeText={setWeight}
+  onFocus={onInputFocus}
+  keyboardType="numeric"
+/>
+
       <TouchableOpacity style={styles.smallButton} onPress={() => onAddSet(item.id)}>
         <Text style={styles.smallButtonText}>Add Set</Text>
       </TouchableOpacity>
@@ -141,6 +142,17 @@ const styles = StyleSheet.create({
     color: '#555',
     textAlign: 'center',
   },
+  exerciseInput: {
+  ...theme.input,
+  backgroundColor: '#fff5e0', // exemple de couleur douce
+  borderWidth: 1,
+  borderColor: theme.colors.primary,
+  color: theme.colors.primary,
+  textAlign: 'center',
+  flex: 1,
+  marginRight: 8,
+},
+
 });
 
 export default ExerciseCard;

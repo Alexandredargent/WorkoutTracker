@@ -59,8 +59,8 @@ const LoginScreen = ({ navigation, setUser }) => {
   return (
     
   <ImageBackground
-  source={theme.backgroundImage.source}
-  resizeMode={theme.backgroundImage.defaultResizeMode}
+  source={theme.appBackgroundLogin.source}
+  resizeMode={theme.appBackgroundLogin.defaultResizeMode}
   style={styles.backgroundImage}
 >
   <KeyboardAvoidingView
@@ -75,7 +75,7 @@ const LoginScreen = ({ navigation, setUser }) => {
              style={styles.logo}
         /> */}
             
-        <Text style={styles.title}>Fittrack</Text>
+        <Text style={styles.title}>FitTrack</Text>
         <View style={styles.inputContainer}>
           <TextInput
             placeholder="Email"

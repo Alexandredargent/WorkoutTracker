@@ -23,10 +23,13 @@ import {
   deleteSetFromExercise,
   updateSetInExercise,
   deleteExerciseFromDiary,
-  deleteMealFromDiary, // Import the new function
+  deleteMealFromDiary,
   addWeightToDiary,
   updateWeightInDiary,
+  setDayComment,          
+  fetchDayComment         
 } from '../services/diaryService.js';
+
 import { auth } from '../services/firebase.js';
 import { Ionicons } from '@expo/vector-icons';
 import { Animated, PanResponder, Dimensions } from 'react-native';
@@ -599,12 +602,12 @@ const DiaryScreen = ({ navigation, route }) => {
                     onPress={() => toggleSection('exercise')}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
-                    <Ionicons name="barbell" size={32} color={theme.colors.primary} style={{ marginRight: 8 }} />
+                    <Ionicons name="barbell" size={32} color={theme.colors.shadow} style={{ marginRight: 8 }} />
                     <Text style={styles.sectionTitle}>Exercises</Text>
                     <Ionicons
                       name={activeSections.includes('exercise') ? 'chevron-up' : 'chevron-down'}
                       size={24}
-                      color={theme.colors.primary}
+                      color={theme.colors.shadow}
                     />
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -614,7 +617,7 @@ const DiaryScreen = ({ navigation, route }) => {
                     }
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
-                    <Ionicons name="add-circle" size={28} color={theme.colors.primary} />
+                    <Ionicons name="add-circle" size={28} color={theme.colors.shadow} />
                   </TouchableOpacity>
                 </View>
                 <Collapsible collapsed={!activeSections.includes('exercise')}>
@@ -657,12 +660,12 @@ const DiaryScreen = ({ navigation, route }) => {
                     onPress={() => toggleSection('meal')}
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
-                    <Ionicons name="restaurant" size={32} color={theme.colors.primary} style={{ marginRight: 8 }} />
+                    <Ionicons name="restaurant" size={32} color={theme.colors.shadow} style={{ marginRight: 8 }} />
                     <Text style={styles.sectionTitle}>Meals</Text>
                     <Ionicons
                       name={activeSections.includes('meal') ? 'chevron-up' : 'chevron-down'}
                       size={24}
-                      color={theme.colors.primary}
+                      color={theme.colors.shadow}
                     />
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -672,7 +675,7 @@ const DiaryScreen = ({ navigation, route }) => {
                     }
                     hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                   >
-                    <Ionicons name="add-circle" size={28} color={theme.colors.primary} />
+                    <Ionicons name="add-circle" size={28} color={theme.colors.shadow} />
                   </TouchableOpacity>
                 </View>
                 <Collapsible collapsed={!activeSections.includes('meal')}>
@@ -698,20 +701,19 @@ const DiaryScreen = ({ navigation, route }) => {
                 </Collapsible>
 
                 <View style={styles.sectionHeader}>
-                  <Ionicons name="scale" size={32} color={theme.colors.primary} style={{ marginRight: 8 }} />
+                  <Ionicons name="scale" size={32} color={theme.colors.shadow} style={{ marginRight: 8 }} />
                   <Text style={styles.sectionTitle}>Weight</Text>
-                  <TouchableOpacity
-                    style={[styles.headerAddButton, isFutureDate && styles.disabledButton]}
-                    onPress={!isFutureDate ? handleOpenWeightModal : () => Alert.alert("Future Date", "You cannot log weight for a future date.")}
-                    disabled={isFutureDate}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    {weightEntry ? (
-                      <Ionicons name="pencil" size={28} color={theme.colors.primary} />
-                    ) : (
-                      <Ionicons name="add-circle" size={28} color={theme.colors.primary} />
-                    )}
-                  </TouchableOpacity>
+                  {!weightEntry && (
+  <TouchableOpacity
+    style={[styles.headerAddButton, isFutureDate && styles.disabledButton]}
+    onPress={!isFutureDate ? handleOpenWeightModal : () => Alert.alert("Future Date", "You cannot log weight for a future date.")}
+    disabled={isFutureDate}
+    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+  >
+    <Ionicons name="add-circle" size={28} color={theme.colors.shadow} />
+  </TouchableOpacity>
+)}
+
                 </View>
                 {isFutureDate ? (
                   <View style={styles.emptySection}><Text style={styles.emptySectionText}>Cannot log weight for a future date.</Text></View>
@@ -734,7 +736,11 @@ const DiaryScreen = ({ navigation, route }) => {
                     {dayComment ? 'Modify comment of the day' : 'Add comment of the day'}
                   </Text>
                 </TouchableOpacity>
-                <Text style={{ margin: 8, fontStyle: 'italic', color: '#555' }}>{dayComment}</Text>
+                <View style={styles.commentCard}>
+  <Text style={styles.commentLabel}>Comment of the Day</Text>
+  <Text style={styles.commentText}>{dayComment}</Text>
+</View>
+
               </>
             
           </ScrollView>
@@ -782,103 +788,177 @@ const DiaryScreen = ({ navigation, route }) => {
         </Modal>
 
         <Modal
-          animationType="fade"
-          transparent={true}
-          visible={isEditSetModalVisible}
-          onRequestClose={() => setIsEditSetModalVisible(false)}
+  animationType="fade"
+  transparent={true}
+  visible={isWeightModalVisible}
+  onRequestClose={() => setIsWeightModalVisible(false)}
+>
+  <View style={theme.modal.overlay}>
+    <View style={theme.modal.container}>
+      <Text style={theme.modal.title}>Log Your Weight</Text>
+      <TextInput
+        style={theme.modal.input}
+        placeholder="Enter weight (kg)"
+        value={weightInput}
+        onChangeText={setWeightInput}
+        keyboardType="numeric"
+        placeholderTextColor="#ccc"
+      />
+      <View style={theme.modal.buttons}>
+        <TouchableOpacity
+          style={[theme.modal.button, theme.modal.cancelButton]}
+          onPress={() => setIsWeightModalVisible(false)}
         >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
-              <Text style={styles.modalTitle}>Edit Set</Text>
-              <Text style={styles.modalLabel}>Reps</Text>
+          <Text style={theme.modal.buttonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[theme.modal.button, theme.modal.submitButton]}
+          onPress={handleSubmitWeight}
+        >
+          <Text style={theme.modal.buttonText}>Submit</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
+
+
+        <Modal
+          visible={editMealModalVisible}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setEditMealModalVisible(false)}
+        >
+          <View style={theme.modal.overlay}>
+            <View style={theme.modal.container}>
+              <Text style={theme.modal.title}>Modify Quantity</Text>
+              <Text style={theme.modal.label}>Quantity (grams):</Text>
               <TextInput
-                style={styles.modalInput}
-                placeholder="Reps"
-                value={reps}
-                onChangeText={setReps}
+                value={editQuantity}
+                onChangeText={setEditQuantity}
                 keyboardType="numeric"
+                style={theme.modal.input}
+                placeholder="e.g., 150"
               />
-              <Text style={styles.modalLabel}>Weight</Text>
-              <TextInput
-                style={styles.modalInput}
-                placeholder="Weight"
-                value={weight}
-                onChangeText={setWeight}
-                keyboardType="numeric"
-              />
-              <View style={styles.modalButtons}>
+              <View style={theme.modal.buttons}>
                 <TouchableOpacity
-                  style={[styles.modalButton, styles.cancelButton]}
-                  onPress={() => setIsEditSetModalVisible(false)}
+                  style={[theme.modal.button, theme.modal.cancelButton]}
+                  onPress={() => setEditMealModalVisible(false)}
                 >
-                  <Text style={styles.modalButtonText}>Cancel</Text>
+                  <Text style={theme.modal.buttonText}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.modalButton, styles.submitButton]}
-                  onPress={handleSaveSet}
+                  style={[theme.modal.button, theme.modal.submitButton]}
+                  onPress={async () => {
+                    await handleUpdateMealQuantity();
+                    setEditMealModalVisible(false);
+                  }}
                 >
-                  <Text style={styles.modalButtonText}>Save</Text>
+                  <Text style={theme.modal.buttonText}>Save</Text>
                 </TouchableOpacity>
               </View>
             </View>
           </View>
         </Modal>
 
-        <Modal
-          visible={editMealModalVisible}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setEditMealModalVisible(false)}
-        >
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0008' }}>
-            <View style={{ backgroundColor: 'white', padding: 20, borderRadius: 10, width: 250 }}>
-              <Text>Modify quantity (grams):</Text>
-              <TextInput
-                value={editQuantity}
-                onChangeText={setEditQuantity}
-                keyboardType="numeric"
-                style={{ borderBottomWidth: 1, marginBottom: 10, fontSize: 18, padding: 4 }}
-              />
-              <Button
-                title="Save"
-                onPress={async () => {
-                  await handleUpdateMealQuantity();
-                  setEditMealModalVisible(false);
-                }}
-              />
-              <Button title="Cancel" onPress={() => setEditMealModalVisible(false)} />
-            </View>
-          </View>
-        </Modal>
+        {/* Day Comment Modal already uses theme.modal styles, so no changes needed here if it's consistent */}
+
 
         <Modal
-          visible={isCommentModalVisible}
-          transparent
-          animationType="slide"
-          onRequestClose={() => setIsCommentModalVisible(false)}
+  visible={isCommentModalVisible}
+  transparent
+  animationType="fade"
+  onRequestClose={() => setIsCommentModalVisible(false)}
+>
+  <View style={theme.modal.overlay}>
+    <View style={theme.modal.container}>
+      <Text style={theme.modal.title}>Comment on the Day</Text>
+      <TextInput
+        value={dayComment}
+        onChangeText={setDayCommentState}
+        placeholder="Add comments or notes..."
+        placeholderTextColor="#ccc"
+        style={[theme.modal.input, { minHeight: 60 }]}
+        multiline
+      />
+      <View style={theme.modal.buttons}>
+        <TouchableOpacity
+          style={[theme.modal.button, theme.modal.cancelButton]}
+          onPress={() => setIsCommentModalVisible(false)}
         >
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0008' }}>
-            <View style={{ backgroundColor: 'white', padding: 20, borderRadius: 10, width: 280 }}>
-              <Text style={{ fontWeight: 'bold', marginBottom: 8 }}>Comment on the day</Text>
-              <TextInput
-                value={dayComment}
-                onChangeText={setDayCommentState}
-                placeholder="Add comments or notes..."
-                style={{ borderWidth: 1, borderColor: '#ccc', borderRadius: 8, padding: 8, minHeight: 60, marginBottom: 12 }}
-                multiline
-              />
-              <Button
-                title="Save"
-                onPress={async () => {
-                  const user = auth.currentUser;
-                  await setDayComment(user.uid, format(selectedDate, 'yyyy-MM-dd'), dayComment);
-                  setIsCommentModalVisible(false);
-                }}
-              />
-              <Button title="Cancel" onPress={() => setIsCommentModalVisible(false)} />
-            </View>
-          </View>
-        </Modal>
+          <Text style={theme.modal.buttonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[theme.modal.button, theme.modal.submitButton]}
+          onPress={async () => {
+            const user = auth.currentUser;
+            if (!user) {
+              Alert.alert('Error', 'User not signed in.');
+              return;
+            }
+            try {
+              await setDayComment(user.uid, format(selectedDate, 'yyyy-MM-dd'), dayComment);
+              setIsCommentModalVisible(false);
+              Alert.alert('Success', 'Comment saved!');
+            } catch (err) {
+              Alert.alert('Error', 'Failed to save comment. Try again.');
+              console.error(err);
+            }
+          }}
+        >
+          <Text style={theme.modal.buttonText}>Save</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
+<Modal
+  animationType="fade"
+  transparent={true}
+  visible={isEditSetModalVisible}
+  onRequestClose={() => setIsEditSetModalVisible(false)}
+>
+  <View style={theme.modal.overlay}>
+    <View style={theme.modal.container}>
+      <Text style={theme.modal.title}>Edit Set</Text>
+
+      <Text style={theme.modal.label}>Reps</Text>
+      <TextInput
+        style={theme.modal.input}
+        placeholder="Reps"
+        value={reps}
+        onChangeText={setReps}
+        keyboardType="numeric"
+      />
+
+      <Text style={theme.modal.label}>Weight (kg)</Text>
+      <TextInput
+        style={theme.modal.input}
+        placeholder="Weight"
+        value={weight}
+        onChangeText={setWeight}
+        keyboardType="numeric"
+      />
+
+      <View style={theme.modal.buttons}>
+        <TouchableOpacity
+          style={[theme.modal.button, theme.modal.cancelButton]}
+          onPress={() => setIsEditSetModalVisible(false)}
+        >
+          <Text style={theme.modal.buttonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[theme.modal.button, theme.modal.submitButton]}
+          onPress={handleSaveSet}
+        >
+          <Text style={theme.modal.buttonText}>Save</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
+
+
       </View>
     </SafeAreaView>
     </ImageBackground>
@@ -913,7 +993,7 @@ const styles = StyleSheet.create({
 },
 container: {
   flex: 1,
-  backgroundColor: 'rgba(255, 255, 255, 0.26)',
+ 
   
 },
 
@@ -978,7 +1058,10 @@ container: {
     flex: 1,
   },
   sectionTitle: {
-    ...theme.typography.sectionTitle,
+    fontSize: 20,
+    color: 'black',
+    textAlign: 'center',
+    fontWeight: '600',
   },
   headerAddButton: {
     backgroundColor: theme.colors.card,
@@ -1071,10 +1154,10 @@ container: {
   modalOverlay: {
     ...theme.modal.overlay,
   },
-  modalContainer: {
-    ...theme.modal.container,
+  modalContainer: { // This style was defined but not used by the weight modal directly.
+    ...theme.modal.container, // It's good to keep it for other modals that might need it.
   },
-  modalLabel: {
+  modalLabel: { // This style was used by the edit set modal, ensure it's from theme.
     ...theme.modal.label,
   },
   modalTitle: {
@@ -1125,6 +1208,32 @@ container: {
   disabledButton: {
     opacity: 0.5,
   },
+  commentCard: {
+  backgroundColor: theme.colors.card,
+  padding: theme.spacing.md,
+  borderRadius: 12,
+  marginHorizontal: theme.spacing.md,
+  marginTop: theme.spacing.sm,
+  shadowColor: theme.colors.shadow,
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 4,
+  elevation: 2,
+},
+commentLabel: {
+  fontSize: 14,
+  color: theme.colors.primary,
+  fontWeight: '600',
+  marginBottom: 4,
+  textAlign:'center',
+},
+commentText: {
+  fontSize: 16,
+  color: theme.colors.text,
+  fontStyle: 'italic',
+  textAlign:'center',
+},
+
 });
 
 export default DiaryScreen;
