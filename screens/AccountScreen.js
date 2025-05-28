@@ -158,7 +158,7 @@ const AccountScreen = () => {
       </TouchableOpacity>
 
       {/* Modal for editing */}
-      <Modal visible={modalVisible} transparent animationType="slide">
+      <Modal visible={modalVisible} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Edit Goal & Activity</Text>

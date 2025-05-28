@@ -580,7 +580,7 @@ const muscleIcons = {
       {/* Add Exercise Modal */}
       <Modal
         visible={addExerciseModalVisible}
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         onRequestClose={() => setAddExerciseModalVisible(false)}
       >

@@ -101,7 +101,9 @@ const StatisticsScreen = () => {
 
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Total Workouts</Text>
-        <Text style={styles.totalWorkouts}>{totalWorkouts}</Text>
+        <View style={theme.card}>
+          <Text style={styles.totalWorkouts}>{totalWorkouts}</Text>
+        </View>
       </View>
 
       <View style={styles.section}>
@@ -148,6 +150,14 @@ const StatisticsScreen = () => {
             height={220}
             yAxisSuffix="kg"
             chartConfig={{
+              backgroundColor: '#fff',
+              backgroundGradientFrom: '#e0f7f1',
+              backgroundGradientTo: '#c4ebe3',
+              decimalPlaces: 1,
+              color: (opacity = 1) => `rgba(23, 92, 91, ${opacity})`,
+              labelColor: (opacity = 1) => `rgba(23, 92, 91, ${opacity})`,
+              style: { borderRadius: 16 },
+              propsForDots: { r: '5', strokeWidth: '2', stroke: '#175c5b' },
               backgroundColor: '#e26a00',
               backgroundGradientFrom: '#fb8c00',
               backgroundGradientTo: '#ffa726',
@@ -171,9 +181,27 @@ const StatisticsScreen = () => {
 };
 
 const styles = StyleSheet.create({
+  statRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 6,
+    borderBottomColor: '#ddd',
+    borderBottomWidth: 1,
+  },
+  statLabel: {
+    fontSize: 16,
+    color: theme.colors.text,
+    fontWeight: '600',
+  },
+  statValue: {
+    fontSize: 16,
+    color: theme.colors.primary,
+    fontWeight: '700',
+  },
+
   container: {
   padding: theme.spacing.lg,
-  //backgroundColor: 'rgba(255, 255, 255, 0.26)',
+  // backgroundColor: 'rgba(255, 255, 255, 0.26)',
 },
 
   title: {

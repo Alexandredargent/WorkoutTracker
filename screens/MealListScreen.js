@@ -177,7 +177,7 @@ const MealListScreen = ({ navigation, route }) => {
 
         <Modal
   visible={modalVisible}
-  animationType="slide"
+  animationType="fade"
   transparent={true}
 >
   <View style={styles.modalContainer}>

@@ -16,6 +16,8 @@ import theme from '../styles/theme';
 import { fetchUserProgram, updateUserProgram, deleteUserProgram } from '../services/firebaseExerciseService';
 import { Ionicons } from '@expo/vector-icons';
 import { auth } from '../services/firebase';
+import { applyProgramToDate } from '../services/diaryService';
+
 import { useFocusEffect } from '@react-navigation/native';
 
 const ProgramDetailScreen = ({ navigation, route }) => {
@@ -390,7 +392,7 @@ const ProgramDetailScreen = ({ navigation, route }) => {
       {/* Edit Exercise Modal */}
       <Modal
         visible={editExerciseModalVisible}
-        animationType="slide"
+        animationType="fade"
         transparent={true}
         onRequestClose={() => setEditExerciseModalVisible(false)}
       >
@@ -452,6 +454,33 @@ const ProgramDetailScreen = ({ navigation, route }) => {
           </View>
         </View>
       </Modal>
+      {route.params?.fromSelect && (
+  <TouchableOpacity
+    style={{
+      backgroundColor: theme.colors.primary,
+      margin: 16,
+      padding: 12,
+      borderRadius: 10,
+      alignItems: 'center',
+    }}
+    onPress={async () => {
+      try {
+        await applyProgramToDate(auth.currentUser.uid, route.params.selectedDate, program);
+        Alert.alert("Success", "Program applied to your diary.");
+        navigation.navigate("Main", {
+        screen: "Diary", // ou "Journal", selon ton Tab.Screen name
+        });
+
+      } catch (error) {
+        console.error(error);
+        Alert.alert("Error", "Could not apply program.");
+      }
+    }}
+  >
+    <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>Apply to {route.params.selectedDate}</Text>
+  </TouchableOpacity>
+)}
+
     </SafeAreaView>
   );
 };

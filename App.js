@@ -21,7 +21,7 @@ import ProgramDetailScreen from './screens/ProgramDetailScreen';
 import { auth } from './services/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import theme from './styles/theme'; // ton thème avec backgroundImage
-
+import SelectProgramScreen from './screens/SelectProgramScreen';
 const Stack = createNativeStackNavigator();
 
 export default function App() {
@@ -65,6 +65,8 @@ export default function App() {
           <Stack.Screen name="ChatScreen" component={ChatScreen} options={{ title: 'Chat' }} />
           <Stack.Screen name="CreateProgramScreen" component={CreateProgramScreen} options={{ title: 'Create Program' }} />
           <Stack.Screen name="ProgramDetailScreen" component={ProgramDetailScreen} options={{ title: 'Detail Program' }} />
+          <Stack.Screen name="SelectProgramScreen" component={SelectProgramScreen} options={{ title: "Choose Program" }} />
+          
         </Stack.Navigator>
       </NavigationContainer>
     

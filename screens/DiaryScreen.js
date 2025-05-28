@@ -26,7 +26,8 @@ import {
   deleteMealFromDiary,
   addWeightToDiary,
   updateWeightInDiary,
-  setDayComment,          
+  setDayComment,
+            
   fetchDayComment         
 } from '../services/diaryService.js';
 
@@ -597,29 +598,48 @@ const DiaryScreen = ({ navigation, route }) => {
             
               <>
                 <View style={styles.sectionHeader}>
-                  <TouchableOpacity
-                    style={styles.headerToggle}
-                    onPress={() => toggleSection('exercise')}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <Ionicons name="barbell" size={32} color={theme.colors.shadow} style={{ marginRight: 8 }} />
-                    <Text style={styles.sectionTitle}>Exercises</Text>
-                    <Ionicons
-                      name={activeSections.includes('exercise') ? 'chevron-up' : 'chevron-down'}
-                      size={24}
-                      color={theme.colors.shadow}
-                    />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.headerAddButton}
-                    onPress={() =>
-                      navigation.navigate('ExerciseListScreen', { date: format(selectedDate, 'yyyy-MM-dd') })
-                    }
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <Ionicons name="add-circle" size={28} color={theme.colors.shadow} />
-                  </TouchableOpacity>
-                </View>
+  <TouchableOpacity
+    style={styles.iconButton}
+    onPress={() =>
+      navigation.navigate('SelectProgramScreen', {
+        selectedDate: format(selectedDate, 'yyyy-MM-dd'),
+      })
+    }
+    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+  >
+    <Ionicons name="book-outline" size={26} color={theme.colors.shadow} />
+  </TouchableOpacity>
+
+  <TouchableOpacity
+    style={styles.headerToggle}
+    onPress={() => toggleSection('exercise')}
+    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+  >
+    <Ionicons name="barbell" size={32} color={theme.colors.shadow} style={{ marginRight: 8 }} />
+    <Text style={styles.sectionTitle}>Exercises</Text>
+    <Ionicons
+      name={activeSections.includes('exercise') ? 'chevron-up' : 'chevron-down'}
+      size={24}
+      color={theme.colors.shadow}
+      style={{ marginLeft: 8 }}
+    />
+  </TouchableOpacity>
+
+  <TouchableOpacity
+    style={styles.iconButton}
+    onPress={() =>
+      navigation.navigate('ExerciseListScreen', {
+        date: format(selectedDate, 'yyyy-MM-dd'),
+      })
+    }
+    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+  >
+    <Ionicons name="add-circle" size={28} color={theme.colors.shadow} />
+  </TouchableOpacity>
+</View>
+
+
+
                 <Collapsible collapsed={!activeSections.includes('exercise')}>
                   {entries.filter(entry => entry.exercise).length > 0 ? (
                     entries.filter(entry => entry.exercise).map(item => {
@@ -655,29 +675,34 @@ const DiaryScreen = ({ navigation, route }) => {
                 </Collapsible>
 
                 <View style={styles.sectionHeader}>
-                  <TouchableOpacity
-                    style={styles.headerToggle}
-                    onPress={() => toggleSection('meal')}
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <Ionicons name="restaurant" size={32} color={theme.colors.shadow} style={{ marginRight: 8 }} />
-                    <Text style={styles.sectionTitle}>Meals</Text>
-                    <Ionicons
-                      name={activeSections.includes('meal') ? 'chevron-up' : 'chevron-down'}
-                      size={24}
-                      color={theme.colors.shadow}
-                    />
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.headerAddButton}
-                    onPress={() =>
-                      navigation.navigate('MealListScreen', { date: format(selectedDate, 'yyyy-MM-dd') })
-                    }
-                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                  >
-                    <Ionicons name="add-circle" size={28} color={theme.colors.shadow} />
-                  </TouchableOpacity>
-                </View>
+  <View style={styles.spacer} /> 
+  
+  <TouchableOpacity
+    style={styles.headerToggle}
+    onPress={() => toggleSection('meal')}
+    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+  >
+    <Ionicons name="restaurant" size={32} color={theme.colors.shadow} style={{ marginRight: 8 }} />
+    <Text style={styles.sectionTitle}>Meals</Text>
+    <Ionicons
+      name={activeSections.includes('meal') ? 'chevron-up' : 'chevron-down'}
+      size={24}
+      color={theme.colors.shadow}
+      style={{ marginLeft: 8 }}
+    />
+  </TouchableOpacity>
+
+  <TouchableOpacity
+    style={styles.iconButton}
+    onPress={() =>
+      navigation.navigate('MealListScreen', { date: format(selectedDate, 'yyyy-MM-dd') })
+    }
+    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+  >
+    <Ionicons name="add-circle" size={28} color={theme.colors.shadow} />
+  </TouchableOpacity>
+</View>
+
                 <Collapsible collapsed={!activeSections.includes('meal')}>
                   {entries.filter(entry => entry.mealName).length > 0 ? (
                     entries.filter(entry => entry.mealName).map(item => (
@@ -1017,6 +1042,30 @@ container: {
     paddingHorizontal: 12,
     borderRadius: 20,
   },
+  headerButtonsRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 8,
+},
+iconButton: {
+  backgroundColor: theme.colors.card,
+  padding: 6,
+  borderRadius: 20,
+  alignItems: 'center',
+  justifyContent: 'center',
+  marginHorizontal: 6,
+  shadowColor: theme.colors.shadow,
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.1,
+  shadowRadius: 2,
+  elevation: 2,
+},
+spacer: {
+  width: 40, // adapte au besoin pour équilibrer visuellement
+},
+
+
+
   dateText: {
     fontSize: 16,
     fontWeight: '600',
@@ -1064,12 +1113,12 @@ container: {
     fontWeight: '600',
   },
   headerAddButton: {
-    backgroundColor: theme.colors.card,
-    borderRadius: 20,
-    padding: 4,
-    position: 'absolute',
-    right: theme.spacing.md,
-  },
+  backgroundColor: theme.colors.card,
+  borderRadius: 20,
+  padding: 4,
+  marginLeft: 8, // un petit espacement entre les icônes
+},
+
   card: {
     ...theme.card,
   },

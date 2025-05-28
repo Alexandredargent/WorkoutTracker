@@ -3,7 +3,8 @@ import {
   addDoc, 
   query, 
   where, 
-  getDocs, 
+  getDocs,
+  getDoc, 
   updateDoc as updateFirestoreDoc, // Alias updateDoc
   arrayUnion, 
   arrayRemove, 
@@ -153,6 +154,55 @@ export const addMealToDiary = async (userId, date, meal) => {
     throw error;
   }
 };
+export const applyProgramToDate = async (userId, date, program) => {
+  try {
+    const exercises = program.exercises || [];
+
+    const enrichedExercises = await Promise.all(
+      exercises.map(async (ex) => {
+        // Cherche les données complètes de l'exercice à partir de l'ID
+        let exerciseData = null;
+
+        const userExerciseRef = doc(db, 'users', userId, 'exercises', ex.exerciseId);
+        const userExerciseSnap = await getDoc(userExerciseRef);
+
+        if (userExerciseSnap.exists()) {
+          exerciseData = userExerciseSnap.data();
+        } else {
+          const globalExerciseRef = doc(db, 'exercises', ex.exerciseId);
+          const globalExerciseSnap = await getDoc(globalExerciseRef);
+          if (globalExerciseSnap.exists()) {
+            exerciseData = globalExerciseSnap.data();
+          }
+        }
+
+        if (!exerciseData) return null;
+
+        return {
+          ...exerciseData,
+          sets: [], // important : ne pas copier les sets
+        };
+      })
+    );
+
+    const batch = enrichedExercises
+      .filter(Boolean)
+      .map(async (exercise) => {
+        return await addDoc(collection(db, 'users', userId, 'diaryEntries'), {
+          userId,
+          date,
+          exercise,
+          type: 'exercise',
+        });
+      });
+
+    await Promise.all(batch);
+  } catch (error) {
+    console.error('Error applying program to diary:', error);
+    throw error;
+  }
+};
+
 
 
 // Add a new weight entry (if there is no weight yet for the day)
