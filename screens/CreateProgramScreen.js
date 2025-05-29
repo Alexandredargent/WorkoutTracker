@@ -1,6 +1,7 @@
 // d:\Applications\WorkoutTracker\screens\CreateProgramScreen.js
 import React, { useState, useEffect, useCallback } from 'react';
 import { getMuscleIcon } from '../utils/muscleIcons';
+import MuscleGroupSelector from '../components/MuscleGroupSelector';
 
 
 
@@ -29,7 +30,11 @@ const CreateProgramScreen = ({ navigation, route }) => {
   const [programDescription, setProgramDescription] = useState('');
   const [selectedExercises, setSelectedExercises] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-   
+  
+  // Add muscle group selection state:
+  const [selectedMuscleGroups, setSelectedMuscleGroups] = useState([]);
+  const [muscleGroupSelectorVisible, setMuscleGroupSelectorVisible] = useState(false);
+
   // Handle the selected exercise returned from ExerciseListScreen
   useEffect(() => {
     if (route.params?.selectedExerciseForProgram) {
@@ -68,26 +73,27 @@ const CreateProgramScreen = ({ navigation, route }) => {
   }, []);
 
   const handleSaveProgram = async () => {
-  if (!programName.trim()) {
-    Alert.alert('Error', 'Please enter a name for your program.');
-    return;
-  }
-  if (selectedExercises.length === 0) {
-    Alert.alert('Error', 'Please add at least one exercise to your program.');
-    return;
-  }
+    if (!programName.trim()) {
+      Alert.alert('Error', 'Please enter a name for your program.');
+      return;
+    }
+    if (selectedExercises.length === 0) {
+      Alert.alert('Error', 'Please add at least one exercise to your program.');
+      return;
+    }
 
-  const userId = auth.currentUser?.uid;
-  if (!userId) {
-    Alert.alert('Error', 'User not logged in.');
-    return;
-  }
+    const userId = auth.currentUser?.uid;
+    if (!userId) {
+      Alert.alert('Error', 'User not logged in.');
+      return;
+    }
 
-  setIsLoading(true);
-  const programData = {
-    name: programName.trim(),
-    description: programDescription.trim(),
-    exercises: selectedExercises.map(ex => {
+    setIsLoading(true);
+    const programData = {
+      name: programName.trim(),
+      description: programDescription.trim(),
+      muscleGroups: selectedMuscleGroups, // Add muscle groups to program data
+      exercises: selectedExercises.map(ex => {
   const exerciseObj = {
     exerciseId: ex.id || '',
     name: ex.name || ex.Name || '', // accepte name OU Name
@@ -213,7 +219,6 @@ const CreateProgramScreen = ({ navigation, route }) => {
           style={{ flex: 1 }}
           keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
         >
-          {/* Form inputs outside of FlatList - this prevents keyboard dismissal */}
           <View style={styles.form}>
             <TextInput
               style={styles.input}
@@ -224,6 +229,7 @@ const CreateProgramScreen = ({ navigation, route }) => {
               blurOnSubmit={false}
               returnKeyType="next"
             />
+            
             <TextInput
               style={[styles.input, styles.textArea]}
               placeholder="Description (optional)"
@@ -235,6 +241,36 @@ const CreateProgramScreen = ({ navigation, route }) => {
               blurOnSubmit={false}
               returnKeyType="done"
             />
+
+            {/* Muscle Groups Selection */}
+            <View style={styles.muscleGroupSection}>
+              <Text style={styles.muscleGroupLabel}>Target Muscle Groups (up to 3)</Text>
+              <TouchableOpacity
+                style={styles.muscleGroupSelector}
+                onPress={() => setMuscleGroupSelectorVisible(true)}
+              >
+                <View style={styles.selectedMuscleGroups}>
+                  {selectedMuscleGroups.length === 0 ? (
+                    <Text style={styles.muscleGroupPlaceholder}>Tap to select muscle groups</Text>
+                  ) : (
+                    <View style={styles.muscleGroupDisplay}>
+                      {selectedMuscleGroups.map((muscleGroup, index) => (
+                        <View key={muscleGroup} style={styles.muscleGroupChip}>
+                          <Image 
+                            source={getMuscleIcon(muscleGroup)} 
+                            style={styles.muscleGroupChipImage}
+                            resizeMode="contain"
+                          />
+                          <Text style={styles.muscleGroupChipText}>{muscleGroup}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={theme.colors.muted} />
+              </TouchableOpacity>
+            </View>
+
             <Text style={styles.subHeader}>Exercises</Text>
           </View>
 
@@ -262,6 +298,14 @@ const CreateProgramScreen = ({ navigation, route }) => {
               </Text>
             </TouchableOpacity>
           </View>
+
+          {/* Muscle Group Selector Modal */}
+          <MuscleGroupSelector
+            selectedMuscleGroups={selectedMuscleGroups}
+            onSelectMuscleGroups={setSelectedMuscleGroups}
+            visible={muscleGroupSelectorVisible}
+            onClose={() => setMuscleGroupSelectorVisible(false)}
+          />
         </KeyboardAvoidingView>
       </SafeAreaView>
     </ImageBackground>
@@ -419,6 +463,58 @@ const styles = StyleSheet.create({
   },
   disabledButton: {
     opacity: 0.7,
+  },
+  muscleGroupSection: {
+    marginBottom: theme.spacing.md,
+  },
+  muscleGroupLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.text,
+    marginBottom: theme.spacing.sm,
+  },
+  muscleGroupSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: theme.colors.card,
+    padding: theme.spacing.md,
+    borderRadius: theme.input.borderRadius,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    minHeight: 60,
+  },
+  selectedMuscleGroups: {
+    flex: 1,
+  },
+  muscleGroupPlaceholder: {
+    fontSize: 14,
+    color: theme.colors.muted,
+  },
+  muscleGroupDisplay: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing.sm,
+  },
+  muscleGroupChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.primary + '15',
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 4,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+  },
+  muscleGroupChipImage: {
+    width: 20,
+    height: 20,
+    marginRight: 6,
+  },
+  muscleGroupChipText: {
+    fontSize: 12,
+    color: theme.colors.primary,
+    fontWeight: '500',
   },
 });
 

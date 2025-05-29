@@ -1,12 +1,13 @@
 // d:\Applications\WorkoutTracker\screens\ProgramsScreen.js
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, ActivityIndicator, Alert, TextInput } from 'react-native';
+import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, FlatList, ActivityIndicator, Alert, TextInput, Image } from 'react-native';
 import theme from '../styles/theme';
 import { fetchUserPrograms, fetchPublicPrograms, deleteUserProgram, toggleFavoriteProgram, fetchFavoritePrograms } from '../services/firebaseExerciseService.js'; // Import Firebase functions
 import { Ionicons } from '@expo/vector-icons';
 import { auth } from '../services/firebase';
 import { useFocusEffect } from '@react-navigation/native';
 import { ImageBackground } from 'react-native';
+import { getMuscleIcon } from '../utils/muscleIcons';
 
 const ProgramsScreen = ({ navigation }) => {
   const [programs, setPrograms] = useState([]);
@@ -149,18 +150,37 @@ const ProgramsScreen = ({ navigation }) => {
     const isFavorite = favoritePrograms.includes(item.id);
     
     return (
-      
       <TouchableOpacity 
         style={styles.programItem} 
         onPress={() => navigation.navigate('ProgramDetailScreen', { programId: item.id, programName: item.name })}
       >
         <View style={styles.itemContent}>
-          <View style={styles.programIcon}>
-            <Ionicons name="fitness-outline" size={24} color={theme.colors.primary} />
+          {/* Muscle group icons - fixed positioning */}
+          <View style={styles.muscleGroupIcons}>
+            {item.muscleGroups && item.muscleGroups.length > 0 ? (
+              item.muscleGroups.slice(0, 3).map((muscleGroup, index) => (
+                <Image
+                  key={muscleGroup}
+                  source={getMuscleIcon(muscleGroup)}
+                  style={[
+                    styles.muscleGroupIcon,
+                    { marginRight: index < 2 ? 4 : 0 } // Small gap between icons
+                  ]}
+                  resizeMode="contain"
+                />
+              ))
+            ) : (
+              <View style={styles.defaultIconContainer}>
+                <Ionicons name="fitness-outline" size={24} color={theme.colors.primary} />
+              </View>
+            )}
           </View>
+          
+          {/* Program content - with proper margin */}
           <View style={styles.programItemContent}>
+            {/* Header with name and badges */}
             <View style={styles.programHeader}>
-              <Text style={styles.programName}>{item.name}</Text>
+              <Text style={styles.programName} numberOfLines={1}>{item.name}</Text>
               <View style={styles.programBadges}>
                 {!isUserCreated && (
                   <View style={styles.publicBadge}>
@@ -174,19 +194,45 @@ const ProgramsScreen = ({ navigation }) => {
                 )}
               </View>
             </View>
-            {!!item.description && <Text style={styles.programDescription}>{item.description}</Text>}
+            
+            {/* Description */}
+            {!!item.description && (
+              <Text style={styles.programDescription} numberOfLines={2}>
+                {item.description}
+              </Text>
+            )}
+            
+            {/* Stats row */}
             <View style={styles.programStats}>
               <View style={styles.tag}>
                 <Text style={styles.tagText}>{item.exercises?.length || 0} exercises</Text>
               </View>
-              {item.author && !isUserCreated && (
-                <View style={styles.authorTag}>
-                  <Text style={styles.authorTagText}>by {item.author}</Text>
+              
+              {/* Muscle group tags - simplified */}
+              {item.muscleGroups && item.muscleGroups.length > 0 && (
+                <View style={styles.muscleGroupTags}>
+                  {item.muscleGroups.slice(0, 2).map((muscleGroup) => (
+                    <View key={muscleGroup} style={styles.muscleGroupTag}>
+                      <Text style={styles.muscleGroupTagText}>{muscleGroup}</Text>
+                    </View>
+                  ))}
+                  {item.muscleGroups.length > 2 && (
+                    <View style={styles.muscleGroupTag}>
+                      <Text style={styles.muscleGroupTagText}>+{item.muscleGroups.length - 2}</Text>
+                    </View>
+                  )}
                 </View>
               )}
             </View>
+            
+            {/* Author info if applicable */}
+            {item.author && !isUserCreated && (
+              <Text style={styles.authorText}>by {item.author}</Text>
+            )}
           </View>
         </View>
+        
+        {/* Action buttons */}
         <View style={styles.programActions}>
           <TouchableOpacity 
             onPress={() => handleToggleFavorite(item.id, isFavorite)} 
@@ -303,10 +349,8 @@ const ProgramsScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: {
-  flex: 1,
- // backgroundColor: 'rgba(255, 255, 255, 0.26)',
-},
-
+    flex: 1,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -347,8 +391,6 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 4,
   },
-  
-
   addProgramButtonText: {
     color: 'white',
     fontSize: 16,
@@ -415,59 +457,166 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.lg,
     paddingBottom: theme.spacing.lg,
   },
+
+  // IMPROVED PROGRAM ITEM STYLES:
   programItem: {
     backgroundColor: '#ffff',
     padding: theme.spacing.md,
     borderRadius: theme.card.borderRadius,
     marginBottom: theme.spacing.md,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start', // Changed from 'center' to 'flex-start'
     shadowColor: theme.colors.shadow,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
     elevation: 3,
+    minHeight: 80, // Ensure minimum height
   },
   itemContent: {
     flexDirection: 'row',
-   
-    alignItems: 'center',
+    alignItems: 'flex-start', // Changed alignment
     flex: 1,
   },
-  programIcon: {
+  
+  // MUSCLE GROUP ICONS:
+  muscleGroupIcons: {
+    flexDirection: 'row',
     marginRight: theme.spacing.md,
+    alignItems: 'center',
+    width: 120, // Width for 3 icons side by side
+    height: 40,
   },
+  muscleGroupIcon: {
+    width: 32, // Slightly smaller to fit 3
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#fff',
+    backgroundColor: theme.colors.background,
+  },
+  defaultIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: theme.colors.background,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  
+  // PROGRAM CONTENT - ensure proper spacing:
   programItemContent: {
     flex: 1,
+    justifyContent: 'flex-start',
+    marginLeft: 0, // Reset any margin that might cause overlap
+  },
+  programHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 4, // Reduced spacing
   },
   programName: {
-    fontSize: 18,
+    fontSize: 16, // Slightly smaller
     fontWeight: 'bold',
     color: theme.colors.text,
+    flex: 1, // Take available space
+    marginRight: theme.spacing.sm,
   },
   programDescription: {
-    fontSize: 14,
+    fontSize: 13,
     color: theme.colors.muted,
-    marginTop: theme.spacing.xs,
+    marginBottom: theme.spacing.xs,
+    lineHeight: 18,
   },
+  
+  // BADGES:
+  programBadges: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  publicBadge: {
+    backgroundColor: '#6c757d',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  publicBadgeText: {
+    color: 'white',
+    fontSize: 9,
+    fontWeight: 'bold',
+  },
+  createdBadge: {
+    backgroundColor: '#28a745',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  createdBadgeText: {
+    color: 'white',
+    fontSize: 9,
+    fontWeight: 'bold',
+  },
+  
+  // STATS AND TAGS:
   programStats: {
     flexDirection: 'row',
-    marginTop: theme.spacing.sm,
+    alignItems: 'center',
+    flexWrap: 'wrap', // Allow wrapping
+    gap: 6, // Consistent spacing
   },
   tag: {
     backgroundColor: theme.colors.primary,
-    borderRadius: 999,
-    paddingVertical: 4,
+    borderRadius: 12,
+    paddingVertical: 3,
     paddingHorizontal: 8,
   },
   tagText: {
-    fontSize: 12,
+    fontSize: 11,
     color: 'white',
     fontWeight: 'bold',
   },
+  muscleGroupTags: {
+    flexDirection: 'row',
+    gap: 4,
+    flexWrap: 'wrap',
+  },
+  muscleGroupTag: {
+    backgroundColor: theme.colors.primary + '20',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: theme.colors.primary + '40',
+  },
+  muscleGroupTagText: {
+    color: theme.colors.primary,
+    fontSize: 9,
+    fontWeight: '500',
+  },
+  
+  // AUTHOR:
+  authorText: {
+    fontSize: 11,
+    color: theme.colors.muted,
+    fontStyle: 'italic',
+    marginTop: 4,
+  },
+  
+  // ACTIONS:
+  programActions: {
+    flexDirection: 'column', // Stack vertically for better layout
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    marginLeft: theme.spacing.sm,
+  },
+  favoriteButton: {
+    padding: theme.spacing.sm,
+  },
   deleteButton: {
-    paddingLeft: theme.spacing.md,
+    padding: theme.spacing.sm,
   },
 });
 

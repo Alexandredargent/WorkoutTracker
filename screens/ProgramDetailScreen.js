@@ -19,6 +19,7 @@ import { fetchUserProgram, updateUserProgram, deleteUserProgram } from '../servi
 import { Ionicons } from '@expo/vector-icons';
 import { auth } from '../services/firebase';
 import { applyProgramToDate } from '../services/diaryService';
+import { getMuscleIcon } from '../utils/muscleIcons'; // Add this import
 
 import { useFocusEffect } from '@react-navigation/native';
 function normalizeExerciseFields(ex) {
@@ -34,27 +35,6 @@ function normalizeExerciseFields(ex) {
   };
 }
 
-
-const muscleIcons = {
-  Abdominals: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Rectus Abdominus.png'),
-  Abductors: require('../assets/Backbodymuscles_EPS_PNG_SVG/PNG files/Gluteus medius.png'),
-  Adductors: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Adductor Longus and Pectineus.png'),
-  Back: require('../assets/Backbodymuscles_EPS_PNG_SVG/PNG files/Lattisimus dorsi.png'),
-  Biceps: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Biceps brachii.png'),
-  Calves: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Gastrocnemius (calf).png'),
-  Chest: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Pectoralis Major.png'),
-  Forearms: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Brachioradialis.png'),
-  Glutes: require('../assets/Backbodymuscles_EPS_PNG_SVG/PNG files/Gluteus maximus.png'),
-  Hamstrings: require('../assets/Backbodymuscles_EPS_PNG_SVG/PNG files/Biceps fermoris.png'),
-  "Hip Flexors": require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Sartorius.png'),
-  Neck: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Omohyoid.png'),
-  Quadriceps: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Rectus femoris.png'),
-  Shins: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Soleus.png'),
-  Shoulders: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Deltoids.png'),
-  Trapezius: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Trapezius.png'),
-  Triceps: require('../assets/Backbodymuscles_EPS_PNG_SVG/PNG files/Triceps Brachii ( long head, lateral head ).png'),
-  Default: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Body black outline with white background.png'),
-};
 
 const ProgramDetailScreen = ({ navigation, route }) => {
   const { programId, programName } = route.params;
@@ -270,74 +250,73 @@ useEffect(() => {
 
 
   const renderExerciseItem = ({ item, index }) => {
-  const imageSource = muscleIcons[item.targetMuscleGroup] || muscleIcons.Default;
+    const normalized = normalizeExerciseFields(item);
+    const imageSource = getMuscleIcon(normalized.targetMuscleGroup);
 
-  return (
-    <View style={styles.exerciseItem}>
-      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <Image
-          source={imageSource}
-          style={{ width: 60, height: 60, marginRight: 12 }}
-          resizeMode="contain"
-        />
-        <View style={{ flex: 1 }}>
-          <Text style={styles.exerciseName}>{item.name}</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 }}>
-            {item.targetMuscleGroup ? (
-              <View style={styles.tag}>
-                <Text style={styles.tagText}>{item.targetMuscleGroup}</Text>
-              </View>
-            ) : null}
-            {item.primaryEquipment ? (
-              <View style={styles.tag}>
-                <Text style={styles.tagText}>{item.primaryEquipment}</Text>
-              </View>
-            ) : null}
-            {item.difficultyLevel ? (
-              <View style={styles.tag}>
-                <Text style={styles.tagText}>{item.difficultyLevel}</Text>
-              </View>
-            ) : null}
+    return (
+      <View style={styles.exerciseItem}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Image
+            source={imageSource}
+            style={{ width: 60, height: 60, marginRight: 12 }}
+            resizeMode="contain"
+          />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.exerciseName}>{item.name}</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginTop: 4 }}>
+              {item.targetMuscleGroup ? (
+                <View style={styles.tag}>
+                  <Text style={styles.tagText}>{item.targetMuscleGroup}</Text>
+                </View>
+              ) : null}
+              {item.primaryEquipment ? (
+                <View style={styles.tag}>
+                  <Text style={styles.tagText}>{item.primaryEquipment}</Text>
+                </View>
+              ) : null}
+              {item.difficultyLevel ? (
+                <View style={styles.tag}>
+                  <Text style={styles.tagText}>{item.difficultyLevel}</Text>
+                </View>
+              ) : null}
+            </View>
+          </View>
+
+          <View style={styles.exerciseActions}>
+            <TouchableOpacity
+              onPress={() => handleEditExercise(item, index)}
+              style={styles.actionButton}
+            >
+              <Ionicons name="create-outline" size={20} color={theme.colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleRemoveExercise(index)}
+              style={styles.actionButton}
+            >
+              <Ionicons name="trash-outline" size={20} color={theme.colors.error} />
+            </TouchableOpacity>
           </View>
         </View>
 
-        <View style={styles.exerciseActions}>
-          <TouchableOpacity
-            onPress={() => handleEditExercise(item, index)}
-            style={styles.actionButton}
-          >
-            <Ionicons name="create-outline" size={20} color={theme.colors.primary} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => handleRemoveExercise(index)}
-            style={styles.actionButton}
-          >
-            <Ionicons name="trash-outline" size={20} color={theme.colors.error} />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <View style={styles.exerciseDetails}>
-        <View style={styles.exerciseDetailRow}>
-          <Text style={styles.exerciseDetailLabel}>Sets:</Text>
-          <Text style={styles.exerciseDetailValue}>{item.sets || 'Not set'}</Text>
-        </View>
-        <View style={styles.exerciseDetailRow}>
-          <Text style={styles.exerciseDetailLabel}>Reps:</Text>
-          <Text style={styles.exerciseDetailValue}>{item.reps || 'Not set'}</Text>
-        </View>
-        {item.notes ? (
+        <View style={styles.exerciseDetails}>
           <View style={styles.exerciseDetailRow}>
-            <Text style={styles.exerciseDetailLabel}>Notes:</Text>
-            <Text style={styles.exerciseDetailValue}>{item.notes}</Text>
+            <Text style={styles.exerciseDetailLabel}>Sets:</Text>
+            <Text style={styles.exerciseDetailValue}>{item.sets || 'Not set'}</Text>
           </View>
-        ) : null}
+          <View style={styles.exerciseDetailRow}>
+            <Text style={styles.exerciseDetailLabel}>Reps:</Text>
+            <Text style={styles.exerciseDetailValue}>{item.reps || 'Not set'}</Text>
+          </View>
+          {item.notes ? (
+            <View style={styles.exerciseDetailRow}>
+              <Text style={styles.exerciseDetailLabel}>Notes:</Text>
+              <Text style={styles.exerciseDetailValue}>{item.notes}</Text>
+            </View>
+          ) : null}
+        </View>
       </View>
-    </View>
-  );
-};
-
-
+    );
+  };
 
   if (isLoading) {
     return (
@@ -360,14 +339,33 @@ useEffect(() => {
 
   return (
     <ImageBackground
-                     source={theme.backgroundImage.source}
-                     resizeMode={theme.backgroundImage.defaultResizeMode}
-                     style={styles.background}
-                   >
+      source={theme.backgroundImage.source}
+      resizeMode={theme.backgroundImage.defaultResizeMode}
+      style={styles.background}
+    >
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
+          {/* Add muscle group icons display in header */}
+          {program.muscleGroups && program.muscleGroups.length > 0 && (
+            <View style={styles.headerMuscleGroups}>
+              {program.muscleGroups.slice(0, 3).map((muscleGroup, index) => (
+                <Image
+                  key={muscleGroup}
+                  source={getMuscleIcon(muscleGroup)}
+                  style={[
+                    styles.headerMuscleIcon,
+                    { 
+                      zIndex: 3 - index,
+                      marginLeft: index > 0 ? -8 : 0 
+                    }
+                  ]}
+                  resizeMode="contain"
+                />
+              ))}
+            </View>
+          )}
           
           {isEditing ? (
             <TextInput
@@ -421,6 +419,26 @@ useEffect(() => {
             {program.description ? (
               <Text style={styles.programDescription}>{program.description}</Text>
             ) : null}
+            
+            {/* Display muscle groups as tags */}
+            {program.muscleGroups && program.muscleGroups.length > 0 && (
+              <View style={styles.muscleGroupsContainer}>
+                <Text style={styles.muscleGroupsLabel}>Target Muscle Groups:</Text>
+                <View style={styles.muscleGroupsList}>
+                  {program.muscleGroups.map((muscleGroup) => (
+                    <View key={muscleGroup} style={styles.muscleGroupChip}>
+                      <Image 
+                        source={getMuscleIcon(muscleGroup)} 
+                        style={styles.muscleGroupChipImage}
+                        resizeMode="contain"
+                      />
+                      <Text style={styles.muscleGroupChipText}>{muscleGroup}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+            
             <View style={styles.programStats}>
               <View style={styles.statItem}>
                 <Text style={styles.statValue}>{program.exercises?.length || 0}</Text>
@@ -876,6 +894,53 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  headerMuscleGroups: {
+    flexDirection: 'row',
+    marginRight: theme.spacing.md,
+    alignItems: 'center',
+  },
+  headerMuscleIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#fff',
+    backgroundColor: theme.colors.background,
+  },
+  muscleGroupsContainer: {
+    marginBottom: theme.spacing.md,
+  },
+  muscleGroupsLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.text,
+    marginBottom: theme.spacing.sm,
+  },
+  muscleGroupsList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: theme.spacing.sm,
+  },
+  muscleGroupChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: theme.colors.primary + '15',
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: 6,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.primary,
+  },
+  muscleGroupChipImage: {
+    width: 16,
+    height: 16,
+    marginRight: 6,
+  },
+  muscleGroupChipText: {
+    fontSize: 12,
+    color: theme.colors.primary,
+    fontWeight: '500',
   },
 });
 
