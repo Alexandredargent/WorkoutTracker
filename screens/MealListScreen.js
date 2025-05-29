@@ -203,14 +203,7 @@ const MealListScreen = ({ navigation, route }) => {
     </TouchableOpacity>
   );
 
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
-  }
-
+  
   return (
     <ImageBackground
                          source={theme.backgroundImage.source}
@@ -313,12 +306,18 @@ if (user) {
 </View>
 
 
-      <FlatList
-        data={getFilteredMeals()}
-        keyExtractor={(item) => item.id}
-        renderItem={renderMealItem}
-        contentContainerStyle={styles.listContent}
-      />
+      {loading ? (
+  <View style={styles.loadingContainer}>
+    <ActivityIndicator size="large" color={theme.colors.primary} />
+  </View>
+) : (
+  <FlatList
+    data={getFilteredMeals()}
+    keyExtractor={(item) => item.id}
+    renderItem={renderMealItem}
+    contentContainerStyle={styles.listContent}
+  />
+)}
     </SafeAreaView>
     </ImageBackground>
   );

@@ -130,13 +130,24 @@ const MessagesScreen = ({ navigation }) => {
     <View style={styles.container}>
       <Text style={[theme.typography.sectionTitle, { marginTop: 0 }]}>Find Friends</Text>
       <TextInput
-        placeholder="Search users..."
-        value={search}
-        onChangeText={setSearch}
-        onSubmitEditing={handleSearch}
-        style={[theme.input, { marginVertical: theme.spacing.sm, borderWidth: 1, borderColor: theme.colors.border }]}
-        placeholderTextColor={theme.colors.card}
-      />
+  placeholder="Search users..."
+  value={search}
+  onChangeText={setSearch}
+  onSubmitEditing={handleSearch}
+  style={{
+    
+    height: 45,
+    borderColor: theme.colors.primary,
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingHorizontal: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    backgroundColor: theme.colors.card,
+    fontSize: 16,
+    color: theme.colors.text,
+  }}
+  placeholderTextColor={theme.colors.muted}
+/>
       <FlatList
         data={users}
         keyExtractor={item => item.id}
