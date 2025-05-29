@@ -9,6 +9,7 @@ import {
   Platform,
   Animated,
   ScrollView,
+  ImageBackground,
   Keyboard
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
@@ -65,6 +66,11 @@ const FitnessProfileScreen = () => {
   };
 
   return (
+    <ImageBackground
+                     source={theme.backgroundImage.source}
+                     resizeMode={theme.backgroundImage.defaultResizeMode}
+                     style={styles.background}
+                   >
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       style={styles.container}
@@ -164,13 +170,18 @@ const FitnessProfileScreen = () => {
         </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    
+  },
+  background: {
+    flex: 1,
+    backgroundColor: '#101924',
   },
   scrollContainer: {
     flexGrow: 1,

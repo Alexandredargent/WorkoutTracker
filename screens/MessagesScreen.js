@@ -135,7 +135,7 @@ const MessagesScreen = ({ navigation }) => {
         onChangeText={setSearch}
         onSubmitEditing={handleSearch}
         style={[theme.input, { marginVertical: theme.spacing.sm, borderWidth: 1, borderColor: theme.colors.border }]}
-        placeholderTextColor={theme.colors.muted}
+        placeholderTextColor={theme.colors.card}
       />
       <FlatList
         data={users}
@@ -220,6 +220,13 @@ const styles = StyleSheet.create({
   //backgroundColor: 'rgba(255, 255, 255, 0.26)',
   padding: theme.spacing.md,
  },
+ searchAddContainer: {
+     flexDirection: 'row',
+     alignItems: 'center',
+     marginHorizontal: theme.spacing.lg,
+     marginTop: theme.spacing.md,
+     marginBottom: theme.spacing.md,
+   },
   
 });
 export default MessagesScreen;

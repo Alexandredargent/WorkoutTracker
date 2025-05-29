@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, Modal, TouchableOpacity, Button, Alert } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, Modal, TouchableOpacity, Button, Alert,ImageBackground } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { auth, db } from '../services/firebase';
 import { doc, getDoc, updateDoc, collection, query, where, orderBy, limit, getDocs, deleteDoc } from 'firebase/firestore';
@@ -116,6 +116,11 @@ const AccountScreen = () => {
   }
 
   return (
+    <ImageBackground
+                     source={theme.backgroundImage.source}
+                     resizeMode={theme.backgroundImage.defaultResizeMode}
+                     style={styles.background}
+                   >
     <View style={styles.container}>
       <Text style={styles.title}>{userInfo.username}</Text>
       {user ? (
@@ -191,6 +196,7 @@ const AccountScreen = () => {
         </View>
       </Modal>
     </View>
+    </ImageBackground>
   );
 };
 
@@ -199,7 +205,13 @@ const styles = StyleSheet.create({
     flex: 1, 
     justifyContent: 'center', 
     alignItems: 'center',
-    backgroundColor: theme.colors.background,
+  },
+  background: {
+    flex: 1,
+    backgroundColor: '#101924',
+    
+    
+
   },
   title: { 
     fontSize: 48, 

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet,ImageBackground } from 'react-native';
 import { db, auth } from '../services/firebase';
 import { doc, updateDoc, arrayUnion, deleteDoc, getDoc, setDoc, collection, addDoc, serverTimestamp, query, where, getDocs, onSnapshot } from 'firebase/firestore';
+import theme from '../styles/theme';
 const NotificationScreen = () => {
   const [friendRequests, setFriendRequests] = useState([]);
 
@@ -61,6 +62,11 @@ const NotificationScreen = () => {
   };
 
   return (
+    <ImageBackground
+                 source={theme.backgroundImage.source}
+                 resizeMode={theme.backgroundImage.defaultResizeMode}
+                 style={styles.background}
+               >
     <View style={styles.container}>
       <Text style={styles.title}>Friend Requests</Text>
       <FlatList
@@ -81,14 +87,19 @@ const NotificationScreen = () => {
         )}
       />
     </View>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
-    backgroundColor: '#fff',
+     justifyContent: 'center', 
+    alignItems: 'center',
+  },
+  background: {
+    flex: 1,
+    backgroundColor: '#101924',
   },
   title: {
     fontSize: 24,

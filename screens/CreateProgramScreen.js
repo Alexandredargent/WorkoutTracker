@@ -17,6 +17,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  ImageBackground,
 } from 'react-native';
 import theme from '../styles/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -127,6 +128,7 @@ const CreateProgramScreen = ({ navigation, route }) => {
   const imageSource = getMuscleIcon(targetMuscleGroup);
 
   return (
+    
     <View style={styles.exerciseItemContainer}>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
         <Image source={imageSource} style={{ width: 60, height: 60, marginRight: 12 }} resizeMode="contain" />
@@ -200,73 +202,83 @@ const CreateProgramScreen = ({ navigation, route }) => {
   const keyExtractor = useCallback((item) => item.id.toString(), []);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.container}
-        keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
-      >
-        {/* Form inputs outside of FlatList - this prevents keyboard dismissal */}
-        <View style={styles.form}>
-          <TextInput
-            style={styles.input}
-            placeholder="Program Name"
-            value={programName}
-            onChangeText={setProgramName}
-            placeholderTextColor={theme.colors.muted}
-            blurOnSubmit={false}
-            returnKeyType="next"
-          />
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Description (optional)"
-            value={programDescription}
-            onChangeText={setProgramDescription}
-            multiline
-            numberOfLines={3}
-            placeholderTextColor={theme.colors.muted} 
-            blurOnSubmit={false}
-            returnKeyType="done"
-          />
-          <Text style={styles.subHeader}>Exercises</Text>
-        </View>
+    <ImageBackground
+      source={theme.backgroundImage.source}
+      resizeMode={theme.backgroundImage.defaultResizeMode}
+      style={{ flex: 1 }} // <-- assure le fond sur tout l'écran
+    >
+      <SafeAreaView style={{ flex: 1 }}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 20}
+        >
+          {/* Form inputs outside of FlatList - this prevents keyboard dismissal */}
+          <View style={styles.form}>
+            <TextInput
+              style={styles.input}
+              placeholder="Program Name"
+              value={programName}
+              onChangeText={setProgramName}
+              placeholderTextColor={theme.colors.muted}
+              blurOnSubmit={false}
+              returnKeyType="next"
+            />
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              placeholder="Description (optional)"
+              value={programDescription}
+              onChangeText={setProgramDescription}
+              multiline
+              numberOfLines={3}
+              placeholderTextColor={theme.colors.muted} 
+              blurOnSubmit={false}
+              returnKeyType="done"
+            />
+            <Text style={styles.subHeader}>Exercises</Text>
+          </View>
 
-        {/* FlatList for exercises only */}
-        <FlatList
-          data={selectedExercises}
-          renderItem={renderExerciseItem}
-          keyExtractor={keyExtractor}
-          ListEmptyComponent={<Text style={styles.emptyListText}>No exercises added.</Text>}
-          ListFooterComponent={renderListFooter}
-          contentContainerStyle={styles.listContentContainer}
-          keyboardShouldPersistTaps="handled"
-          removeClippedSubviews={false}
-          style={styles.exercisesList}
-        />
+          {/* FlatList for exercises only */}
+          <FlatList
+            data={selectedExercises}
+            renderItem={renderExerciseItem}
+            keyExtractor={keyExtractor}
+            ListEmptyComponent={<Text style={styles.emptyListText}>No exercises added.</Text>}
+            ListFooterComponent={renderListFooter}
+            contentContainerStyle={styles.listContentContainer}
+            keyboardShouldPersistTaps="handled"
+            removeClippedSubviews={false}
+            style={styles.exercisesList}
+          />
 
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={[styles.saveButton, isLoading && styles.disabledButton]}
-            onPress={handleSaveProgram}
-            disabled={isLoading}
-          >
-            <Text style={styles.saveButtonText}>
-              {isLoading ? 'Saving...' : 'Save Program'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+          <View style={styles.footer}>
+            <TouchableOpacity
+              style={[styles.saveButton, isLoading && styles.disabledButton]}
+              onPress={handleSaveProgram}
+              disabled={isLoading}
+            >
+              <Text style={styles.saveButtonText}>
+                {isLoading ? 'Saving...' : 'Save Program'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    
   },
   container: {
     flex: 1,
+  },
+  background: {
+    flex: 1,
+    backgroundColor: '#101924',
   },
   exercisesList: {
     flex: 1,
@@ -296,7 +308,7 @@ const styles = StyleSheet.create({
   form: {
     paddingHorizontal: theme.spacing.lg,
     paddingTop: theme.spacing.md,
-    backgroundColor: theme.colors.background,
+    
   },
   input: {
     backgroundColor: theme.colors.card,
@@ -388,11 +400,11 @@ const styles = StyleSheet.create({
     padding: theme.spacing.xs,
   },
   footer: {
-    padding: theme.spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
-    backgroundColor: theme.colors.background,
-  },
+  padding: theme.spacing.lg,
+  borderTopWidth: 0, // <--- plus de ligne
+  // borderTopColor: theme.colors.border,
+  backgroundColor: 'white',
+},
   saveButton: {
     backgroundColor: theme.colors.primary,
     paddingVertical: theme.spacing.md,

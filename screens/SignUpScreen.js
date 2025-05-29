@@ -10,6 +10,7 @@ import {
   Platform,
   Animated,
   ScrollView,
+  ImageBackground,
   Keyboard,
   Alert
 } from 'react-native';
@@ -126,16 +127,23 @@ const SignUpScreen = ({ setUser }) => {
   };
 
   return (
+    <ImageBackground
+                 source={theme.backgroundImage.source}
+                 resizeMode={theme.backgroundImage.defaultResizeMode}
+                 style={styles.background}
+               >
     <KeyboardAvoidingView 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
     >
+      
       <ScrollView
         contentContainerStyle={styles.scrollContainer}
         keyboardShouldPersistTaps="handled"
         onScrollBeginDrag={Keyboard.dismiss}
       >
+        
         <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
           <Image
             source={{ uri: '/placeholder.svg?height=100&width=100' }}
@@ -182,25 +190,32 @@ const SignUpScreen = ({ setUser }) => {
               {isLoading ? 'Loading...' : 'Next'}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.link}>Back</Text>
-          </TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.replace('Login')}>
+  <Text style={styles.link}>Back</Text>
+</TouchableOpacity>
+
         </Animated.View>
       </ScrollView>
     </KeyboardAvoidingView>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
+  background: {
+    flex: 1,
+    backgroundColor: '#101924',
+  },
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+   
   },
   scrollContainer: {
     flexGrow: 1,
     justifyContent: 'center',
     paddingBottom: theme.spacing.xl * 2,
   },
+  
   content: {
     alignItems: 'center',
     padding: theme.spacing.lg,

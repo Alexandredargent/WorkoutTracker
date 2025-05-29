@@ -58,10 +58,10 @@ const LoginScreen = ({ navigation, setUser }) => {
 
   return (
     
-  <ImageBackground
-  source={theme.appBackgroundLogin.source}
-  resizeMode={theme.appBackgroundLogin.defaultResizeMode}
-  style={styles.backgroundImage}
+ <ImageBackground
+  source={theme.backgroundImage.source}
+  resizeMode={theme.backgroundImage.defaultResizeMode}
+  style={styles.background}
 >
   <KeyboardAvoidingView
     behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -121,10 +121,9 @@ const LoginScreen = ({ navigation, setUser }) => {
       </Animated.View>
     </View>
     
-  </KeyboardAvoidingView>
-  <Image source={require('../assets/character1.png')} style={{ width: 200, height: 300 ,left: 200}} />
+ </KeyboardAvoidingView>
+  
 </ImageBackground>
-
 
 
 
@@ -136,22 +135,22 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     
+
   },
-  keyboardAvoiding: {
+  background: {
   flex: 1,
+  backgroundColor: '#101924',
 },
-
-backgroundImage: {
+keyboardAvoiding: {
   flex: 1,
+  backgroundColor: 'transparent',
 },
-
 content: {
   flex: 1,
   justifyContent: 'center',
   alignItems: 'center',
   padding: theme.spacing.lg,
 },
-
 
   scrollContainer: {
     flexGrow: 1,

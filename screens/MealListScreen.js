@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, SafeAreaView, StatusBar, ActivityIndicator, StyleSheet, Alert } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, SafeAreaView, StatusBar, ActivityIndicator, StyleSheet, Alert, ImageBackground } from 'react-native';
 import { fetchMeals, addUserMeal, fetchUserMeals, deleteUserMeal, toggleFavoriteMeal, fetchFavoriteMeals } from '../services/firebaseMealService.js';
 import { addMealToDiary } from '../services/diaryService';
 import { auth } from '../services/firebase';
@@ -37,46 +37,36 @@ const MealListScreen = ({ navigation, route }) => {
 };
 
   const loadMeals = useCallback(async () => {
-    try {
-      setLoading(true);
-      const user = auth.currentUser;
-      
-      if (filter === 'favorites') {
-        // Load favorite meals
-        if (user) {
-          const favMeals = await fetchFavoriteMeals(user.uid);
-          setMeals(favMeals);
-        }
-      } else {
-        // Load regular meals
-        let userMeals = [];
-        if (user) {
-          userMeals = await fetchUserMeals(user.uid);
-        }
-        const globalMeals = await fetchMeals();
-        // Merge and remove duplicates by name
-        const allMeals = [
-          ...userMeals,
-          ...globalMeals.filter(gm => !userMeals.some(um => um.name === gm.name))
-        ];
-        setMeals(allMeals);
-      }
+  try {
+    setLoading(true);
+    const user = auth.currentUser;
+    let userMeals = [];
+    let globalMeals = [];
+    let favMealIds = [];
 
-      // Load favorite meal IDs for heart icons
-      if (user && filter !== 'favorites') {
-        const favMeals = await fetchFavoriteMeals(user.uid);
-        setFavoriteMeals(favMeals.map(meal => meal.id));
-      }
-    } catch (error) {
-      console.error('Error fetching meals:', error);
-    } finally {
-      setLoading(false);
+    if (user) {
+      userMeals = await fetchUserMeals(user.uid);
+      favMealIds = (await fetchFavoriteMeals(user.uid)).map(m => m.id);
     }
-  }, [filter]);
+    globalMeals = await fetchMeals();
+
+    // Merge and remove duplicates by name
+    const allMeals = [
+      ...userMeals,
+      ...globalMeals.filter(gm => !userMeals.some(um => um.name === gm.name))
+    ];
+    setMeals(allMeals);
+    setFavoriteMeals(favMealIds);
+  } catch (error) {
+    console.error('Error fetching meals:', error);
+  } finally {
+    setLoading(false);
+  }
+}, []);
 
   useEffect(() => {
-    loadMeals();
-  }, [loadMeals]);
+  loadMeals();
+}, []);
 
   const handleToggleFavorite = async (mealId, isCurrentlyFavorite) => {
   const user = auth.currentUser;
@@ -102,24 +92,26 @@ const MealListScreen = ({ navigation, route }) => {
   }
 };
   const getFilteredMeals = useCallback(() => {
-    let filtered = [...meals];
+  let filtered = [...meals];
+  const user = auth.currentUser;
 
-    if (filter === 'created') {
-      const user = auth.currentUser;
-      if (user) {
-        filtered = filtered.filter(meal => meal.uid === user.uid);
-      } else {
-        filtered = [];
-      }
+  if (filter === 'created') {
+    if (user) {
+      filtered = filtered.filter(meal => meal.uid === user.uid);
+    } else {
+      filtered = [];
     }
+  } else if (filter === 'favorites') {
+    filtered = filtered.filter(meal => favoriteMeals.includes(meal.id));
+  }
 
-    if (searchQuery.trim() !== '') {
-      filtered = filtered.filter(meal =>
-        meal.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-    return filtered;
-  }, [meals, filter, searchQuery]);
+  if (searchQuery.trim() !== '') {
+    filtered = filtered.filter(meal =>
+      meal.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }
+  return filtered;
+}, [meals, filter, searchQuery, favoriteMeals]);
 
   const handleAddMeal = async (meal) => {
     const user = auth.currentUser;
@@ -220,6 +212,11 @@ const MealListScreen = ({ navigation, route }) => {
   }
 
   return (
+    <ImageBackground
+                         source={theme.backgroundImage.source}
+                         resizeMode={theme.backgroundImage.defaultResizeMode}
+                         style={styles.background}
+                       >
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
       <View style={styles.topButtonsContainer}>
@@ -323,6 +320,7 @@ if (user) {
         contentContainerStyle={styles.listContent}
       />
     </SafeAreaView>
+    </ImageBackground>
   );
 };
 
@@ -330,13 +328,17 @@ if (user) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+   
   },
   itemActionsContainer: {
   flexDirection: 'row',
   alignItems: 'center',
   marginLeft: theme.spacing.sm,
 },
+background: {
+    flex: 1,
+    backgroundColor: '#101924',
+  },
 
   topButtonsContainer: {
     flexDirection: 'row',
@@ -350,7 +352,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: theme.colors.background,
+    
   },
   searchInput: {
     height: 45,

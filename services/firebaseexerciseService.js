@@ -214,39 +214,22 @@ export const toggleFavoriteProgram = async (userId, programId, isFavorite) => {
   }
 };
 
-/**
- * Fetch user's favorite exercises
- */
 export const fetchFavoriteExercises = async (userId) => {
   try {
     const favoritesCollection = collection(db, 'users', userId, 'favorites', 'exercises', 'items');
     const favoritesSnapshot = await getDocs(favoritesCollection);
-    
-    const favoriteExerciseIds = favoritesSnapshot.docs.map(doc => doc.data().exerciseId);
-    
-    if (favoriteExerciseIds.length === 0) {
-      return { exerciseList: [] };
-    }
-
-    // Fetch the actual exercise data from both global and user exercises
-    const globalExercisesSnapshot = await getDocs(collection(db, 'exercises'));
-    const userExercisesSnapshot = await getDocs(collection(db, 'users', userId, 'exercises'));
-    
-    const allExercises = [
-      ...globalExercisesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })),
-      ...userExercisesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data(), isUserCreated: true }))
-    ];
-
-    const favoriteExercises = allExercises.filter(exercise => 
-      favoriteExerciseIds.includes(exercise.id)
-    );
-
+    // Récupère toutes les infos directement
+    const favoriteExercises = favoritesSnapshot.docs.map(doc => ({
+      ...doc.data(),
+      id: doc.id
+    }));
     return { exerciseList: favoriteExercises };
   } catch (error) {
     console.error('Error fetching favorite exercises:', error);
     throw error;
   }
 };
+
 
 /**
  * Fetch user's favorite programs

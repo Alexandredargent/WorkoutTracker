@@ -9,6 +9,7 @@ import {
   Image,
   FlatList,
   ScrollView,
+  ImageBackground,
 } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { addMealToDiary } from '../services/diaryService'; // Import the addMealToDiary function
@@ -473,6 +474,11 @@ const BarcodeScannerScreen = ({ navigation, route }) => {
   }
 
   return (
+    <ImageBackground
+          source={theme.backgroundImage.source}
+          resizeMode={theme.backgroundImage.defaultResizeMode}
+          style={{ flex: 1 }} // <-- assure le fond sur tout l'écran
+        >
     <View style={styles.container}>
       {!productInfo && (
         <CameraView
@@ -501,16 +507,21 @@ const BarcodeScannerScreen = ({ navigation, route }) => {
         </TouchableOpacity>
       )}
     </View>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
   container: { 
     flex: 1, 
-    backgroundColor: '#000', // Keep black for scanner background
     justifyContent: 'center', 
     alignItems: 'center' 
   },
+  background: {
+    flex: 1,
+    backgroundColor: '#101924',
+  },
+
   permissionText: { 
     color: 'white', 
     textAlign: 'center', 
@@ -548,7 +559,7 @@ const styles = StyleSheet.create({
     width: '100%' 
   },
   productInfoContainer: { 
-    backgroundColor: theme.colors.background, 
+    
     padding: theme.spacing.md 
   },
   header: { 

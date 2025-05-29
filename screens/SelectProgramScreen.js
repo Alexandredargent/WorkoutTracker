@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ActivityIndicator, Alert, StyleSheet } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity,ImageBackground, ActivityIndicator, Alert, StyleSheet } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { fetchUserPrograms } from '../services/firebaseExerciseService';
 import { applyProgramToDate } from '../services/diaryService';
@@ -47,6 +47,11 @@ const SelectProgramScreen = () => {
   }
 
   return (
+   <ImageBackground
+             source={theme.backgroundImage.source}
+             resizeMode={theme.backgroundImage.defaultResizeMode}
+             style={styles.background}
+           >
     <View style={styles.container}>
       <Text style={styles.title}>Select a Program to Apply</Text>
       <FlatList
@@ -72,14 +77,18 @@ const SelectProgramScreen = () => {
         )}
       />
     </View>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
-    padding: theme.spacing.lg,
+    
+  },
+  background: {
+    flex: 1,
+    backgroundColor: '#101924',
   },
   title: {
     fontSize: 20,

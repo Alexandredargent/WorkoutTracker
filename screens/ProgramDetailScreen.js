@@ -12,6 +12,7 @@ import {
   TextInput,
   Modal,
   ScrollView,
+  ImageBackground,
 } from 'react-native';
 import theme from '../styles/theme';
 import { fetchUserProgram, updateUserProgram, deleteUserProgram } from '../services/firebaseExerciseService';
@@ -358,6 +359,11 @@ useEffect(() => {
   }
 
   return (
+    <ImageBackground
+                     source={theme.backgroundImage.source}
+                     resizeMode={theme.backgroundImage.defaultResizeMode}
+                     style={styles.background}
+                   >
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
@@ -548,8 +554,9 @@ useEffect(() => {
     <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>Apply to {route.params.selectedDate}</Text>
   </TouchableOpacity>
 )}
-
+ 
     </SafeAreaView>
+    </ImageBackground>
   );
 };
 
@@ -570,13 +577,17 @@ const styles = StyleSheet.create({
 
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    
+  },
+  background: {
+    flex: 1,
+    backgroundColor: '#101924',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: theme.colors.background,
+    
   },
   errorContainer: {
     flex: 1,

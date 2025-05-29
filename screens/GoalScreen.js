@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ImageBackground,
   Keyboard,
   Alert
 } from 'react-native';
@@ -97,6 +98,11 @@ const GoalScreen = () => {
   };
 
   return (
+    <ImageBackground
+                     source={theme.backgroundImage.source}
+                     resizeMode={theme.backgroundImage.defaultResizeMode}
+                     style={styles.background}
+                   >
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       style={styles.container}
@@ -139,13 +145,18 @@ const GoalScreen = () => {
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
+    </ImageBackground>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    
+  },
+  background: {
+    flex: 1,
+    backgroundColor: '#101924',
   },
   scrollContainer: {
     flexGrow: 1,

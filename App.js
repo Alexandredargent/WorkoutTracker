@@ -44,9 +44,15 @@ export default function App() {
     
       <NavigationContainer>
         <Stack.Navigator
-          initialRouteName={user ? "Main" : "Login"}
-          screenOptions={{ animation: 'fade', animationDuration: 300 }}
-        >
+  initialRouteName={user ? "Main" : "Login"}
+  screenOptions={{
+    animation: 'fade',
+    animationDuration: 300,
+    // AJOUTE ICI !
+     contentStyle: { backgroundColor: '#101924' }
+  }}
+>
+
           <Stack.Screen name="Login" options={{ headerShown: false }}>
             {props => <LoginScreen {...props} setUser={setUser} />}
           </Stack.Screen>

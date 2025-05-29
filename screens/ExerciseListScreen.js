@@ -1,5 +1,20 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, SafeAreaView, StatusBar, ActivityIndicator, TextInput, StyleSheet, Modal, Image, Alert } from 'react-native';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import {
+  View,
+  ImageBackground,
+  Text,
+  Animated,
+  FlatList,
+  TouchableOpacity,
+  SafeAreaView,
+  StatusBar,
+  ActivityIndicator,
+  TextInput,
+  StyleSheet,
+  Modal,
+  Image,
+  Alert,
+} from 'react-native';
 import {
   fetchUserPrograms,
   deleteUserProgram,
@@ -9,49 +24,52 @@ import {
   deleteUserExercise,
   toggleFavoriteExercise,
   fetchFavoriteExercises,
-  isExerciseFavorited
 } from '../services/firebaseExerciseService.js';
 import { addExerciseToDiary } from '../services/diaryService';
 import { auth } from '../services/firebase';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import theme from '../styles/theme';
-import { collection, query, orderBy, startAt, endAt, getDocs } from "firebase/firestore";
+import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../services/firebase';
+import { getMuscleIcon } from '../utils/muscleIcons';
 
 const searchExercises = async (searchText) => {
-  // Fetch all exercises (or just names/ids)
-  const snapshot = await getDocs(collection(db, "exercises"));
-  const allExercises = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-  // Filter client-side for "contains"
-  const results = allExercises.filter(ex =>
+  const snapshot = await getDocs(collection(db, 'exercises'));
+  const allExercises = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+  return allExercises.filter((ex) =>
     (ex.Name || '').toLowerCase().includes(searchText.toLowerCase())
   );
-
-  return results;
 };
 
 const ExerciseListScreen = ({ navigation, route }) => {
   const [exercises, setExercises] = useState([]);
   const [filter, setFilter] = useState('all');
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false); // This state is declared but not currently used. Consider removing or implementing load more functionality.
   const [lastDoc, setLastDoc] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [addExerciseModalVisible, setAddExerciseModalVisible] = useState(false);
-  const [selectedMuscleGroup, setSelectedMuscleGroup] = useState("");
-  const [selectedEquipment, setSelectedEquipment] = useState("");
-  const [selectedDifficulty, setSelectedDifficulty] = useState("");
+  const [selectedMuscleGroup, setSelectedMuscleGroup] = useState('');
+  const [selectedEquipment, setSelectedEquipment] = useState('');
+  const [selectedDifficulty, setSelectedDifficulty] = useState('');
   const [filtersVisible, setFiltersVisible] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [favoriteExercises, setFavoriteExercises] = useState([]);
 
-  const difficultyLevels = ["Novice", "Beginner", "Intermediate", "Advanced", "Expert", "Master", "Grand Master", "Legendary"];
+  const difficultyLevels = [
+    'Novice',
+    'Beginner',
+    'Intermediate',
+    'Advanced',
+    'Expert',
+    'Master',
+    'Grand Master',
+    'Legendary',
+  ];
   const targetMuscleGroups = [
-    "Abdominals", "Abductors", "Adductors", "Back", "Biceps", "Calves",
-    "Chest", "Forearms", "Glutes", "Hamstrings", "Hip Flexors","Neck",
-    "Quadriceps", "Shins", "Shoulders", "Trapezius", "Triceps"
+    'Abdominals', 'Abductors', 'Adductors', 'Back', 'Biceps', 'Calves',
+    'Chest', 'Forearms', 'Glutes', 'Hamstrings', 'Hip Flexors', 'Neck',
+    'Quadriceps', 'Shins', 'Shoulders', 'Trapezius', 'Triceps'
   ];
   const equipmentOptions = [
     "Ab Wheel", "Barbell", "Battle Ropes", "Bodyweight", "Bulgarian Bag", "Cable", "Clubbell", "Dumbbell", "EZ Bar",
@@ -62,9 +80,9 @@ const ExerciseListScreen = ({ navigation, route }) => {
 
   const [newExercise, setNewExercise] = useState({
     Name: '',
-    "Difficulty Level": difficultyLevels[0], // Default to the first option
-    "Target Muscle Group": targetMuscleGroups[0], // Default to the first option
-    "Primary Equipment": '',
+    "Difficulty Level": difficultyLevels[0],
+    "Target Muscle Group": targetMuscleGroups[0],
+    "Primary Equipment": equipmentOptions[0], // Set default to first equipment option
     "Primary Exercise Classification": '',
     "Prime Mover Muscle": "",
     "Secondary Muscle": "",
@@ -74,8 +92,12 @@ const ExerciseListScreen = ({ navigation, route }) => {
     "Movement Pattern #1": "",
     "Body Region": "",
   });
-  const { date, mode, originRoute } = route.params || {}; // mode: 'selectForProgram', originRoute: 'CreateProgramScreen'
 
+  const { date, mode, originRoute } = route.params || {};
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+ const [previousExercises, setPreviousExercises] = useState([]);
+
+  // CHARGEMENT PRINCIPAL
   const loadExercises = async (startAfterDoc = null, append = false) => {
     try {
       setLoading(true);
@@ -86,7 +108,19 @@ const ExerciseListScreen = ({ navigation, route }) => {
         // Load favorite exercises
         if (user) {
           const { exerciseList: favExercises } = await fetchFavoriteExercises(user.uid);
-          setExercises(favExercises);
+          const favoriteIds = favExercises.map(f => f.id);
+          if (favoriteIds.length > 0) {
+            // Récupère tous les exercices de la base
+            const snapshot = await getDocs(collection(db, "exercises"));
+            const allExercises = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            // Filtre uniquement ceux qui sont dans les favoris
+            const favFull = allExercises.filter(ex => favoriteIds.includes(ex.id));
+            setExercises(favFull);
+            setFavoriteExercises(favoriteIds);
+          } else {
+            setExercises([]);
+            setFavoriteExercises([]);
+          }
         }
       } else {
         // Load regular exercises
@@ -118,58 +152,216 @@ const ExerciseListScreen = ({ navigation, route }) => {
   };
 
   const loadExercisesAndResetPagination = useCallback(async () => {
-    setExercises([]); // Clear existing exercises to start fresh
-    setLastDoc(null); // Reset pagination
-    await loadExercises(null); // Load the first page
-  }, [filter]); // Reload when filter changes
+  setExercises([]);   // <-- Vide la liste, donc FlatList sera vide AVANT le fetch, donc pas de flash
+  setLastDoc(null);
+  await loadExercises(null);
+}, [filter]);
+
+
+
+  // FADE-ANIM LISTE SEULEMENT
+  useEffect(() => {
+    if (!loading) {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 20,
+        useNativeDriver: true,
+      }).start();
+    } else {
+      fadeAnim.setValue(0);
+    }
+  }, [loading]);
+
+
+useEffect(() => {
+  // On met à jour la liste affichée uniquement quand le loading est terminé
+  if (!loading) {
+    setPreviousExercises(getFilteredExercises());
+  }
+  // eslint-disable-next-line
+}, [loading, exercises, searchQuery, searchResults, filter, selectedMuscleGroup, selectedEquipment, selectedDifficulty]);
+
 
   useEffect(() => {
-    loadExercisesAndResetPagination();
-  }, [loadExercisesAndResetPagination]);
-
-  const applyFilters = (data) => {
-    let filtered = [...data];
-
-    // If on favorites tab, data is already pre-filtered by favorites.
-    // Only apply search query if present.
+    if (searchQuery.trim() === "") {
+      setSearchResults([]);
+      return;
+    }
     if (filter === 'favorites') {
-      if (searchQuery.trim()) {
-        return filtered.filter(exercise =>
-          (exercise.Name || '').toLowerCase().includes(searchQuery.toLowerCase())
-        );
-      }
-      return filtered; // Return as is if no search query on favorites tab
+      // Recherche uniquement dans les favoris déjà chargés
+      setSearchResults(
+        exercises.filter(ex =>
+          (ex.Name || '').toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      );
+    } else {
+      const fetchResults = async () => {
+        const results = await searchExercises(searchQuery.trim());
+        setSearchResults(results);
+      };
+      fetchResults();
     }
+  }, [searchQuery, filter, favoriteExercises, exercises]);
 
-    if (filter === 'created') {
-      const user = auth.currentUser;
-      if (user) {
-        filtered = filtered.filter(exercise => exercise.uid === user.uid);
-      } else {
-        return []; // Return empty if no user and 'created' filter is active
-      }
-    }
+  // FILTRES
+ const applyFilters = (data) => {
+  let filtered = [...data];
 
-    if (selectedMuscleGroup && selectedMuscleGroup !== "") {
-      filtered = filtered.filter(exercise => exercise["Target Muscle Group"] === selectedMuscleGroup);
-    }
-    if (selectedEquipment && selectedEquipment !== "") {
-      filtered = filtered.filter(exercise => exercise["Primary Equipment"] === selectedEquipment);
-    }
-    if (selectedDifficulty && selectedDifficulty !== "") {
-      filtered = filtered.filter(exercise => exercise["Difficulty Level"] === selectedDifficulty);
-    }
+  // FILTRES (muscle, equipment, difficulty) — always apply, but relaxed
+  if (selectedMuscleGroup && selectedMuscleGroup !== "") {
+    filtered = filtered.filter(
+      (exercise) =>
+        !exercise["Target Muscle Group"] ||
+        exercise["Target Muscle Group"] === selectedMuscleGroup
+    );
+  }
+  if (selectedEquipment && selectedEquipment !== "") {
+    filtered = filtered.filter(
+      (exercise) =>
+        !exercise["Primary Equipment"] ||
+        exercise["Primary Equipment"] === selectedEquipment
+    );
+  }
+  if (selectedDifficulty && selectedDifficulty !== "") {
+    filtered = filtered.filter(
+      (exercise) =>
+        !exercise["Difficulty Level"] ||
+        exercise["Difficulty Level"] === selectedDifficulty
+    );
+  }
 
-    // Apply search query on top of other filters (if not on favorites tab)
-    if (searchQuery.trim()) {
-      filtered = filtered.filter(exercise =>
+  // Filtre "created" : seulement les exercices créés par l'utilisateur
+  if (filter === 'created') {
+    const user = auth.currentUser;
+    if (user) {
+      filtered = filtered.filter((exercise) => exercise.uid === user.uid);
+    } else {
+      filtered = [];
+    }
+  }
+
+  // Recherche (searchQuery)
+  if (searchQuery.trim()) {
+    filtered = filtered.filter((exercise) =>
+      (exercise.Name || '').toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  }
+  return filtered;
+};
+
+
+  const getFilteredExercises = () => {
+  let filtered = [...exercises];
+  const user = auth.currentUser;
+
+  // First apply tab filter (created/favorites)
+  if (filter === 'created') {
+    if (user) {
+      filtered = filtered.filter(exercise => exercise.uid === user.uid);
+    } else {
+      filtered = [];
+    }
+  } else if (filter === 'favorites') {
+    filtered = filtered.filter(exercise => favoriteExercises.includes(exercise.id));
+  }
+
+  // Apply search filter first (from searchResults or current filtered list)
+  if (searchQuery.trim()) {
+    if (filter === 'favorites' || filter === 'created') {
+      // For favorites/created, search within the already filtered results
+      filtered = filtered.filter((exercise) =>
         (exercise.Name || '').toLowerCase().includes(searchQuery.toLowerCase())
       );
+    } else {
+      // For 'all', use searchResults if available
+      filtered = searchQuery.trim() ? searchResults : filtered;
     }
+  }
 
-    return filtered;
+  // Apply additional filters when filters are visible (for all tabs)
+  if (filtersVisible) {
+    if (selectedMuscleGroup && selectedMuscleGroup !== "") {
+      filtered = filtered.filter(exercise => 
+        exercise["Target Muscle Group"] && 
+        exercise["Target Muscle Group"] === selectedMuscleGroup
+      );
+    }
+    if (selectedEquipment && selectedEquipment !== "") {
+      filtered = filtered.filter(exercise => 
+        exercise["Primary Equipment"] && 
+        exercise["Primary Equipment"] === selectedEquipment
+      );
+    }
+    if (selectedDifficulty && selectedDifficulty !== "") {
+      filtered = filtered.filter(exercise => 
+        exercise["Difficulty Level"] && 
+        exercise["Difficulty Level"] === selectedDifficulty
+      );
+    }
+  }
+  
+  return filtered;
+};
+
+  // UI
+  const getEmptyStateText = () => {
+    if (searchQuery.trim()) {
+      return 'No exercises found matching your search.';
+    }
+    switch (filter) {
+      case 'created':
+        return "You haven't created any exercises yet. Tap '+' to create your first exercise.";
+      case 'favorites':
+        return "You haven't favorited any exercises yet. Browse exercises and tap the heart icon to add them to favorites.";
+      default:
+        return "No exercises available. Tap '+' to create your first exercise.";
+    }
   };
-  const handleAddExercise = async (exercise) => {
+
+  const handleToggleFavorite = async (exerciseId, isCurrentlyFavorite) => {
+    const user = auth.currentUser;
+    if (!user) {
+      Alert.alert("Error", "Please log in to favorite exercises.");
+      return;
+    }
+    try {
+      await toggleFavoriteExercise(user.uid, exerciseId, !isCurrentlyFavorite);
+      if (isCurrentlyFavorite) {
+        setFavoriteExercises(prev => prev.filter(id => id !== exerciseId));
+        if (filter === 'favorites') {
+          setExercises(prev => prev.filter(ex => ex.id !== exerciseId));
+        }
+      } else {
+        setFavoriteExercises(prev => [...prev, exerciseId]);
+      }
+    } catch (error) {
+      Alert.alert("Error", "Unable to update favorite status.");
+    }
+  };
+
+  const handleDelete = async (item) => {
+    const user = auth.currentUser;
+    if (!user) return;
+    Alert.alert(
+      "Delete Exercise",
+      "Are you sure you want to delete this exercise?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete", style: "destructive", onPress: async () => {
+            try {
+              await deleteUserExercise(user.uid, item.id);
+              setExercises(prev => prev.filter(ex => ex.id !== item.id));
+            } catch {
+              alert('Failed to delete exercise.');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+   const handleAddExercise = async (exercise) => {
     // Destructure params directly inside the function to ensure freshest values
     // and handle cases where route.params might be null or undefined.
     const currentParams = route.params || {};
@@ -267,7 +459,7 @@ const ExerciseListScreen = ({ navigation, route }) => {
         Name: '',
         "Difficulty Level": difficultyLevels[0],
         "Target Muscle Group": targetMuscleGroups[0],
-        "Primary Equipment": '',
+        "Primary Equipment": equipmentOptions[0], // Set default to first equipment option
         "Primary Exercise Classification": '',
         "Prime Mover Muscle": "",
         "Secondary Muscle": "",
@@ -282,81 +474,16 @@ const ExerciseListScreen = ({ navigation, route }) => {
       alert('Failed to save exercise. Please try again.');
     }
   };
-  // Example: Map muscle group to PNG
-const muscleIcons = {
-
-  Abdominals: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Rectus Abdominus.png'),
-  Abductors: require('../assets/Backbodymuscles_EPS_PNG_SVG/PNG files/Gluteus medius.png'),
-  Adductors: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Adductor Longus and Pectineus.png'),
-  Back: require('../assets/Backbodymuscles_EPS_PNG_SVG/PNG files/Lattisimus dorsi.png'),
-  Biceps: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Biceps brachii.png'),
-  Calves: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Gastrocnemius (calf).png'),
-  Chest: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Pectoralis Major.png'),
-  Forearms: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Brachioradialis.png'),
-  Glutes: require('../assets/Backbodymuscles_EPS_PNG_SVG/PNG files/Gluteus maximus.png'),
-  Hamstrings: require('../assets/Backbodymuscles_EPS_PNG_SVG/PNG files/Biceps fermoris.png'),
-  "Hip Flexors": require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Sartorius.png'),
-  Neck: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Omohyoid.png'),
-  Quadriceps: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Rectus femoris.png'),
-  Shins: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Soleus.png'),
-  Shoulders: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Deltoids.png'),
-  Trapezius: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Trapezius.png'),
-  Triceps: require('../assets/Backbodymuscles_EPS_PNG_SVG/PNG files/Triceps Brachii ( long head, lateral head ).png'),
-  Default: require('../assets/Frontbodymuscles_EPS_PNG_SVG/PNG files/Body black outline with white background.png'),
-  // ...add all muscle groups
-};
-
-  const handleToggleFavorite = async (exerciseId, isCurrentlyFavorite) => {
-    const user = auth.currentUser;
-    if (!user) {
-      Alert.alert("Error", "Please log in to favorite exercises.");
-      return;
-    }
-
-    try {
-      await toggleFavoriteExercise(user.uid, exerciseId, !isCurrentlyFavorite);
-      
-      if (isCurrentlyFavorite) {
-        setFavoriteExercises(prev => prev.filter(id => id !== exerciseId));
-        if (filter === 'favorites') {
-          setExercises(prev => prev.filter(ex => ex.id !== exerciseId));
-        }
-      } else {
-        setFavoriteExercises(prev => [...prev, exerciseId]);
-      }
-    } catch (error) {
-      console.error("Failed to toggle favorite:", error);
-      Alert.alert("Error", "Unable to update favorite status.");
-    }
-  };
 
   const renderExerciseItem = ({ item }) => {
-    const iconSource = muscleIcons[item["Target Muscle Group"]] || muscleIcons.Default;
+  const displayedExercises = loading
+    ? previousExercises
+    : getFilteredExercises();
+
+    const iconSource = getMuscleIcon(item["Target Muscle Group"]);
     const user = auth.currentUser;
     const isCreatedByUser = item.uid === user?.uid;
     const isFavorite = favoriteExercises.includes(item.id);
-
-    const handleDelete = () => {
-      Alert.alert(
-        "Delete Exercise",
-        "Are you sure you want to delete this exercise?",
-        [
-          { text: "Cancel", style: "cancel" },
-          {
-            text: "Delete",
-            style: "destructive",
-            onPress: async () => {
-              try {
-                await deleteUserExercise(user.uid, item.id);
-                setExercises(prev => prev.filter(ex => ex.id !== item.id));
-              } catch (error) {
-                alert('Failed to delete exercise.');
-              }
-            }
-          }
-        ]
-      );
-    };
 
     return (
       <TouchableOpacity
@@ -364,49 +491,41 @@ const muscleIcons = {
         onPress={() => handleAddExercise(item)}
       >
         <View style={styles.itemContent}>
-          <Image source={iconSource} style={{ width: 80, height:80, marginRight: 12 }} resizeMode="contain" />
+          <Image source={iconSource} style={{ width: 80, height: 80, marginRight: 12 }} resizeMode="contain" />
           <View style={styles.itemTextContainer}>
             <Text style={styles.itemText} numberOfLines={2} ellipsizeMode="tail">{item["Name"]}</Text>
             <View style={styles.tagsContainer}>
-              {item["Target Muscle Group"]  ? (
+              {item["Target Muscle Group"] && (
                 <View style={styles.tag}>
-                  <Text style={styles.tagText}>
-                    {item["Target Muscle Group"] }
-                  </Text>
+                  <Text style={styles.tagText}>{item["Target Muscle Group"]}</Text>
                 </View>
-              ) : null}
-              {item["Primary Equipment"] ? (
+              )}
+              {item["Primary Equipment"] && (
                 <View style={styles.tag}>
-                  <Text style={styles.tagText}>
-                    {item["Primary Equipment"] }
-                  </Text>
+                  <Text style={styles.tagText}>{item["Primary Equipment"]}</Text>
                 </View>
-              ) : null}
-              {item["Difficulty Level"] ? (
+              )}
+              {item["Difficulty Level"] && (
                 <View style={styles.tag}>
-                  <Text style={styles.tagText}>
-                    {item["Difficulty Level"]}
-                  </Text>
+                  <Text style={styles.tagText}>{item["Difficulty Level"]}</Text>
                 </View>
-              ) : null}
+              )}
             </View>
           </View>
         </View>
         <View style={styles.itemActionsContainer}>
-          <TouchableOpacity 
-            onPress={() => handleToggleFavorite(item.id, isFavorite)} 
+          <TouchableOpacity
+            onPress={() => handleToggleFavorite(item.id, isFavorite)}
             style={{ marginRight: 12 }}
           >
-            <Ionicons 
-              name={isFavorite ? "heart" : "heart-outline"} 
-              size={24} 
-              color={isFavorite ? theme.colors.error : theme.colors.muted} 
+            <Ionicons
+              name={isFavorite ? "heart" : "heart-outline"}
+              size={24}
+              color={isFavorite ? theme.colors.error : theme.colors.muted}
             />
           </TouchableOpacity>
-          {/* The checkmark/plus icon has been removed as per your request. 
-              The main TouchableOpacity for the item still handles the add/select action. */}
           {isCreatedByUser && (
-            <TouchableOpacity onPress={handleDelete} style={{ marginLeft: 12 }}>
+            <TouchableOpacity onPress={() => handleDelete(item)} style={{ marginLeft: 12 }}>
               <Ionicons name="trash-outline" size={24} color="red" />
             </TouchableOpacity>
           )}
@@ -415,170 +534,207 @@ const muscleIcons = {
     );
   };
 
-  const handleTabChange = (tabName) => {
-    setFilter(tabName);
-    setSearchQuery(''); // Reset search query on tab change
-    // Reset other filters if they are visible and you want them reset
-    setSelectedMuscleGroup("");
-    setSelectedEquipment("");
-    setSelectedDifficulty("");
-    setFiltersVisible(false); // Optionally hide filters panel
-  };
+  const loadAllExercises = useCallback(async () => {
+    setLoading(true);
+    try {
+      const user = auth.currentUser;
+      let userExercises = [];
+      let globalExercises = [];
+      let favExerciseIds = [];
 
-  const renderTabButton = (tabName, label) => (
-    <TouchableOpacity
-      onPress={() => handleTabChange(tabName)}
-      style={[styles.tab, filter === tabName && styles.activeTab]}
-    >
-      <Text style={[styles.tabText, filter === tabName && styles.activeTabText]}>{label}</Text>
-    </TouchableOpacity>
-  );
+      if (user) {
+        const { exerciseList: userList } = await fetchUserExercises(user.uid);
+        userExercises = userList;
+        const { exerciseList: favList } = await fetchFavoriteExercises(user.uid);
+        favExerciseIds = favList.map(f => f.id);
+      }
+      const { exerciseList: globalList } = await fetchExercises();
+      globalExercises = globalList;
 
-  useEffect(() => {
-    if (searchQuery.trim() === "") {
-      setSearchResults([]);
-      return;
-    }
-    const fetchResults = async () => {
-      const results = await searchExercises(searchQuery.trim());
-      setSearchResults(results);
-    };
-    fetchResults();
-  }, [searchQuery]);
+      // Merge and remove duplicates by id
+      let allExercises = [
+        ...userExercises,
+        ...globalExercises.filter(g => !userExercises.some(u => u.id === g.id))
+      ];
 
-  const getEmptyStateText = () => {
-    if (searchQuery.trim()) {
-      return 'No exercises found matching your search.';
-    }
-    switch (filter) {
-      case 'created':
-        return 'You haven\'t created any exercises yet. Tap \'+\' to create your first exercise.';
-      case 'favorites':
-        return 'You haven\'t favorited any exercises yet. Browse exercises and tap the heart icon to add them to favorites.';
-      default: // 'all'
-        return 'No exercises available. Tap \'+\' to create your first exercise.';
-    }
-  };
-
-  // When a filter changes and searchQuery is empty, fetch all exercises and apply filters
-  useEffect(() => {
-    if (searchQuery.trim() === "") {
-      const fetchAll = async () => {
+      // Find missing favorite exercises (not in allExercises)
+      const missingFavIds = favExerciseIds.filter(
+        favId => !allExercises.some(ex => ex.id === favId)
+      );
+      if (missingFavIds.length > 0) {
+        // Fetch missing favorites from global collection
         const snapshot = await getDocs(collection(db, "exercises"));
-        const allExercises = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setExercises(allExercises);
-      };
-      fetchAll();
-    }
-  }, [selectedMuscleGroup, selectedEquipment, selectedDifficulty]);
+        const allGlobal = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        const missingFavs = allGlobal.filter(ex => missingFavIds.includes(ex.id));
+        allExercises = [...allExercises, ...missingFavs];
+      }
 
-  if (loading && exercises.length === 0) { // Show main loader only if no exercises are loaded yet
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
-  }
+      setExercises(allExercises);
+      setFavoriteExercises(favExerciseIds);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+  loadAllExercises();
+}, []);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-
-      {/* Search and Add Button Container */}
-      <View style={styles.searchAddContainer}>
-        <TextInput
-          style={styles.searchBar}
-          placeholder="Search exercises..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholderTextColor={theme.colors.muted}
-        />
-        <TouchableOpacity
-          style={styles.addExerciseButton}
-          onPress={() => setAddExerciseModalVisible(true)}
-        >
-          <Ionicons name="add-circle-outline" size={24} color="white" />
-          <Text style={styles.addExerciseButtonText}>Add</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.tabs}>
-        {renderTabButton('all', 'All')}
-        {renderTabButton('favorites', 'Favorites')}
-        {renderTabButton('created', 'Created')}
-        
-      </View>
-
-      
-
-      {/* Filter Toggle Button - Hide for favorites tab */}
-      {filter !== 'favorites' && (
-        <TouchableOpacity
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          alignSelf: 'flex-end',
-          marginRight: theme.spacing.lg,
-          marginBottom: 4,
-          padding: 4,
-        }}
-        onPress={() => setFiltersVisible(v => !v)}
-      >
-        <Ionicons
-          name={filtersVisible ? 'chevron-up-outline' : 'filter-outline'}
-          size={18}
-          color={theme.colors.primary}
-        />
-        <Text style={{ color: theme.colors.primary, fontSize: 14, marginLeft: 4 }}>
-          {filtersVisible ? 'Hide Filters' : 'Show Filters'}
-        </Text>
-      </TouchableOpacity>
-      )}
-
-      {/* Filter Options - Small Screen - Hide for favorites tab */}
-      {filtersVisible && filter !== 'favorites' && (
-        <View style={{ marginHorizontal: theme.spacing.lg, marginBottom: theme.spacing.sm }}>
-          <View style={{ marginBottom: 4 }}>
-            <Picker
-              selectedValue={selectedMuscleGroup}
-              style={styles.filterPickerSmall}
-              onValueChange={value => setSelectedMuscleGroup(value)}
-            >
-              <Picker.Item label="All Muscle Groups" value="" />
-              {[...new Set(targetMuscleGroups)].map((group) => (
-  <Picker.Item key={group} label={group} value={group} />
-))}
-            </Picker>
-          </View>
-          <View style={{ marginBottom: 4 }}>
-            <Picker
-              selectedValue={selectedEquipment}
-              style={styles.filterPickerSmall}
-              onValueChange={value => setSelectedEquipment(value)}
-            >
-              <Picker.Item label="All Equipment" value="" />
-              {equipmentOptions.map((eq, idx) => (
-                <Picker.Item key={idx} label={eq} value={eq} />
-              ))}
-            </Picker>
-          </View>
-          <View>
-            <Picker
-              selectedValue={selectedDifficulty}
-              style={styles.filterPickerSmall}
-              onValueChange={value => setSelectedDifficulty(value)}
-            >
-              <Picker.Item label="All Difficulties" value="" />
-              {difficultyLevels.map((level, idx) => (
-                <Picker.Item key={idx} label={level} value={level} />
-              ))}
-            </Picker>
-          </View>
+    <ImageBackground
+      source={theme.backgroundImage.source}
+      resizeMode={theme.backgroundImage.defaultResizeMode}
+      style={styles.background}
+    >
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" />
+        <View style={styles.searchAddContainer}>
+          <TextInput
+            style={styles.searchBar}
+            placeholder="Search exercises..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholderTextColor={theme.colors.muted}
+          />
+          <TouchableOpacity
+            style={styles.addExerciseButton}
+            onPress={() => setAddExerciseModalVisible(true)}
+          >
+            <Ionicons name="add-circle-outline" size={24} color="white" />
+            <Text style={styles.addExerciseButtonText}>Add</Text>
+          </TouchableOpacity>
         </View>
-      )}
+        <View style={styles.tabs}>
+          {['all', 'favorites', 'created'].map((tab) =>
+            <TouchableOpacity
+              key={tab}
+              onPress={() => setFilter(tab)}
+              style={[styles.tab, filter === tab && styles.activeTab]}>
+              <Text style={[styles.tabText, filter === tab && styles.activeTabText]}>
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+        {/* Remove this first filter button block */}
+{/* 
+{filter === 'all' && (
+  <TouchableOpacity
+    style={{
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-end',
+      marginRight: theme.spacing.lg,
+      marginBottom: 4,
+      padding: 4,
+    }}
+    onPress={() => setFiltersVisible((v) => !v)}
+  >
+    <Ionicons
+      name={filtersVisible ? 'chevron-up-outline' : 'filter-outline'}
+      size={18}
+      color={theme.colors.primary}
+    />
+    <Text style={{ color: theme.colors.primary, fontSize: 14, marginLeft: 4 }}>
+      {filtersVisible ? 'Hide Filters' : 'Show Filters'}
+    </Text>
+  </TouchableOpacity>
+)}
+*/}
 
-      {/* Add Exercise Modal */}
-      <Modal
+{/* Show filters button on all tabs */}
+<TouchableOpacity
+  style={{
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-end',
+    marginRight: theme.spacing.lg,
+    marginBottom: 4,
+    padding: 4,
+  }}
+  onPress={() => setFiltersVisible((v) => !v)}
+>
+  <Ionicons
+    name={filtersVisible ? 'chevron-up-outline' : 'filter-outline'}
+    size={18}
+    color={theme.colors.primary}
+  />
+  <Text style={{ color: theme.colors.primary, fontSize: 14, marginLeft: 4 }}>
+    {filtersVisible ? 'Hide Filters' : 'Show Filters'}
+  </Text>
+</TouchableOpacity>
+
+{/* Show filter pickers on all tabs */}
+{filtersVisible && (
+  <View style={{ marginHorizontal: theme.spacing.lg, marginBottom: theme.spacing.sm }}>
+    <View style={{ marginBottom: 4 }}>
+      <Picker
+        selectedValue={selectedMuscleGroup}
+        style={styles.filterPickerSmall}
+        onValueChange={(value) => setSelectedMuscleGroup(value)}
+      >
+        <Picker.Item label="All Muscle Groups" value="" />
+        {[...new Set(targetMuscleGroups)].map((group) => (
+          <Picker.Item key={group} label={group} value={group} />
+        ))}
+      </Picker>
+    </View>
+    <View style={{ marginBottom: 4 }}>
+      <Picker
+        selectedValue={selectedEquipment}
+        style={styles.filterPickerSmall}
+        onValueChange={(value) => setSelectedEquipment(value)}
+      >
+        <Picker.Item label="All Equipment" value="" />
+        {equipmentOptions.map((eq, idx) => (
+          <Picker.Item key={idx} label={eq} value={eq} />
+        ))}
+      </Picker>
+    </View>
+    <View>
+      <Picker
+        selectedValue={selectedDifficulty}
+        style={styles.filterPickerSmall}
+        onValueChange={(value) => setSelectedDifficulty(value)}
+      >
+        <Picker.Item label="All Difficulties" value="" />
+        {difficultyLevels.map((level, idx) => (
+          <Picker.Item key={idx} label={level} value={level} />
+        ))}
+      </Picker>
+    </View>
+  </View>
+)}
+
+
+        {/* ----------------- LA LISTE + LOADER + FADE ----------------- */}
+      <View style={styles.listArea}>
+  {loading ? (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', minHeight: 200 }}>
+      <ActivityIndicator size="large" color={theme.colors.primary} />
+    </View>
+  ) : (
+    <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
+      {getFilteredExercises().length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Ionicons name={filter === 'favorites' ? "heart-dislike-outline" : "sad-outline"} size={64} color={theme.colors.muted} />
+          <Text style={styles.emptyText}>{getEmptyStateText()}</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={getFilteredExercises()}
+          keyExtractor={item => item.id}
+          renderItem={renderExerciseItem}
+          contentContainerStyle={styles.listContent}
+        />
+      )}
+    </Animated.View>
+  )}
+</View>
+
+ <Modal
         visible={addExerciseModalVisible}
         animationType="fade"
         transparent={true}
@@ -631,7 +787,6 @@ const muscleIcons = {
                 onValueChange={(itemValue) =>
                   setNewExercise({ ...newExercise, "Primary Equipment": itemValue })
                 }>
-                <Picker.Item label="Select Equipment" value="" />
                 {equipmentOptions.map((equipment, index) => (
                   <Picker.Item key={index} label={equipment} value={equipment} />
                 ))}
@@ -648,32 +803,24 @@ const muscleIcons = {
           </View>
         </View>
       </Modal>
-      {/* Exercise List with Empty State */}
-      {applyFilters(
-        searchQuery.trim() ? searchResults : exercises
-      ).length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Ionicons name={filter === 'favorites' ? "heart-dislike-outline" : "sad-outline"} size={64} color={theme.colors.muted} />
-          <Text style={styles.emptyText}>
-            {getEmptyStateText()}
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={applyFilters(searchQuery.trim() ? searchResults : exercises)}
-          keyExtractor={item => item.id}
-          renderItem={renderExerciseItem}
-          contentContainerStyle={styles.listContent}
-        />
-      )}
-    </SafeAreaView>
+</SafeAreaView>
+    </ImageBackground>
   );
 };
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    
   },
+  background: {
+    flex: 1,
+    backgroundColor: '#101924',
+  },
+  listArea: {
+  flex: 1,
+  minHeight: 200,
+},
+
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -698,7 +845,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: theme.colors.background,
+    
   },
   title: {
     fontSize: 24,
