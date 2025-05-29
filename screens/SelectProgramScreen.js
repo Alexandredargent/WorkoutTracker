@@ -84,7 +84,8 @@ const SelectProgramScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    
+    justifyContent: 'center', 
+    alignItems: 'center',
   },
   background: {
     flex: 1,
@@ -101,9 +102,11 @@ const styles = StyleSheet.create({
     padding: theme.spacing.md,
     borderRadius: 12,
     marginBottom: theme.spacing.sm,
+    width: '200',
   },
   programName: {
     fontSize: 16,
+    textAlign: 'center',
     fontWeight: '600',
     color: theme.colors.text,
   },
@@ -111,6 +114,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: theme.colors.muted,
     marginTop: 4,
+    textAlign: 'center',
   },
 });
 

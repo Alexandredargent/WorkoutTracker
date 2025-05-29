@@ -52,6 +52,7 @@ import { Button } from 'react-native';
 import { calculateAge } from '../utils/date';
 
 
+
 const { width } = Dimensions.get('window');
 
 const DiaryScreen = ({ navigation, route }) => {
@@ -62,8 +63,8 @@ const DiaryScreen = ({ navigation, route }) => {
   const [entries, setEntries] = useState([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [reps, setReps] = useState('');
-  const [weight, setWeight] = useState('');
+  const [weight, setWeight] = useState(''); // Keep for edit modal
+  const [reps, setReps] = useState(''); // Keep for edit modal
   const [weightInput, setWeightInput] = useState('');
   const [isWeightModalVisible, setIsWeightModalVisible] = useState(false);
   const [activeSections, setActiveSections] = useState([]);
@@ -79,6 +80,24 @@ const DiaryScreen = ({ navigation, route }) => {
   const [editMealModalVisible, setEditMealModalVisible] = useState(false);
   const [selectedMealEntry, setSelectedMealEntry] = useState(null);
   const [editQuantity, setEditQuantity] = useState('');
+
+  // ADD THIS: State for individual exercise inputs
+  const [exerciseInputs, setExerciseInputs] = useState({});
+
+  // ADD THESE: Helper functions for exercise inputs
+  const getExerciseInputs = (exerciseId) => {
+    return exerciseInputs[exerciseId] || { reps: '', weight: '' };
+  };
+
+  const updateExerciseInputs = (exerciseId, field, value) => {
+    setExerciseInputs(prev => ({
+      ...prev,
+      [exerciseId]: {
+        ...prev[exerciseId],
+        [field]: value
+      }
+    }));
+  };
 
   // Animation refs for swipe navigation
   const pan = useRef(new Animated.ValueXY()).current;
@@ -211,13 +230,14 @@ const DiaryScreen = ({ navigation, route }) => {
 
   // Add set to exercise handler
   const handleAddSet = async (entryId) => {
-    if (!reps || !weight) {
+    const inputs = getExerciseInputs(entryId);
+    if (!inputs.reps || !inputs.weight) {
       Alert.alert('Input Error', 'Please enter both reps and weight.');
       return;
     }
     const set = {
-      reps: parseInt(reps),
-      weight: parseFloat(weight),
+      reps: parseInt(inputs.reps),
+      weight: parseFloat(inputs.weight),
       timestamp: new Date().toISOString(),
     };
     try {
@@ -227,8 +247,13 @@ const DiaryScreen = ({ navigation, route }) => {
         return;
       }
       await addSetToExercise(user.uid, entryId, set);
-      setReps('');
-      setWeight('');
+      
+      // Clear inputs for this specific exercise
+      setExerciseInputs(prev => ({
+        ...prev,
+        [entryId]: { reps: '', weight: '' }
+      }));
+      
       setEntries((prevEntries) =>
         prevEntries.map((entry) =>
           entry.id === entryId
@@ -407,6 +432,7 @@ const DiaryScreen = ({ navigation, route }) => {
   const handleEditSet = (entryId, set) => {
     setCurrentSet(set);
     setCurrentEntryId(entryId);
+    // Use separate state for edit modal
     setReps(set.reps.toString());
     setWeight(set.weight.toString());
     setIsEditSetModalVisible(true);
@@ -644,27 +670,23 @@ const DiaryScreen = ({ navigation, route }) => {
                   {entries.filter(entry => entry.exercise).length > 0 ? (
                     entries.filter(entry => entry.exercise).map(item => {
                       const iconSource = muscleIcons[item.exercise["Target Muscle Group"]] || muscleIcons.Default;
+                      const inputs = getExerciseInputs(item.id);
+                      
                       return (
                         <ExerciseCard
                           key={item.id || item.exercise.exerciseName}
                           item={item}
-                          reps={reps}
-                          weight={weight}
-                          setReps={setReps}
-                          setWeight={setWeight}
+                          reps={inputs.reps}
+                          weight={inputs.weight}
+                          setReps={(value) => updateExerciseInputs(item.id, 'reps', value)}
+                          setWeight={(value) => updateExerciseInputs(item.id, 'weight', value)}
                           onAddSet={handleAddSet}
                           onDelete={handleDeleteExercise}
                           onDeleteSet={handleDeleteSet}
                           onEditSet={handleEditSet}
                           onInputFocus={handleExerciseInputFocus}
-                          iconSource={iconSource} // <-- Add this line
-                          // ...other props as needed
-                        >
-                          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                            <Image source={iconSource} style={{ width: 28, height: 28, marginRight: 12 }} resizeMode="contain" />
-                            <Text>{item.exercise.Name}</Text>
-                          </View>
-                        </ExerciseCard>
+                          iconSource={iconSource}
+                        />
                       );
                     })
                   ) : (

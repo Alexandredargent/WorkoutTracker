@@ -349,3 +349,43 @@ export const fetchDayComment = async (userId, date) => {
     return '';
   }
 };
+
+// Fetch exercise history for a specific exercise
+export const fetchExerciseHistory = async (userId, exerciseName) => {
+  if (!userId) {
+    console.error('Error fetching exercise history: userId is undefined');
+    throw new Error('User ID is required to fetch exercise history.');
+  }
+  try {
+    console.log('Fetching history for exercise:', exerciseName); // Debug log
+    
+    const q = query(
+      collection(db, 'users', userId, 'diaryEntries'),
+      where('userId', '==', userId),
+      where('type', '==', 'exercise')
+    );
+    const snapshot = await getDocs(q);
+    
+    console.log('Total exercise entries found:', snapshot.docs.length); // Debug log
+    
+    // Filter by exercise name and only include entries with sets
+    const exerciseHistory = snapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(entry => {
+        console.log('Checking entry:', entry.exercise?.Name, 'against:', exerciseName); // Debug log
+        return (
+          entry.exercise && 
+          entry.exercise.Name === exerciseName && 
+          entry.sets && 
+          entry.sets.length > 0
+        );
+      })
+      .sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort by date descending
+    
+    console.log('Filtered exercise history:', exerciseHistory.length, 'entries'); // Debug log
+    return exerciseHistory;
+  } catch (error) {
+    console.error('Error fetching exercise history:', error);
+    throw error;
+  }
+};
