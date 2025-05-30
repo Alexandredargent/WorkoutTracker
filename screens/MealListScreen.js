@@ -245,6 +245,7 @@ const MealListScreen = ({ navigation, route }) => {
           onChangeText={(value) => setNewIngredient({ ...newIngredient, [field]: value })}
           keyboardType={field === 'name' ? 'default' : 'numeric'}
           style={styles.input}
+          placeholderTextColor={theme.colors.muted}
         />
       ))}
 
@@ -260,23 +261,23 @@ const MealListScreen = ({ navigation, route }) => {
             }
             try {
               const user = auth.currentUser;
-if (user) {
-  const mealToSave = {
-    ...newIngredient,
-    calories: parseFloat(newIngredient.calories) || 0,
-    carbs: parseFloat(newIngredient.carbs) || 0,
-    lipids: parseFloat(newIngredient.lipids) || 0,
-    proteins: parseFloat(newIngredient.proteins) || 0,
-    isPopular: false,
-    date: new Date().toISOString(),
-    uid: user.uid, // Now user is defined!
-  };
-  await addUserMeal(user.uid, mealToSave);
-} else {
-  alert('You must be signed in to add an ingredient.');
-  return;
-}
-              await loadMeals(); // Refresh the list
+              if (user) {
+                const mealToSave = {
+                  ...newIngredient,
+                  calories: parseFloat(newIngredient.calories) || 0,
+                  carbs: parseFloat(newIngredient.carbs) || 0,
+                  lipids: parseFloat(newIngredient.lipids) || 0,
+                  proteins: parseFloat(newIngredient.proteins) || 0,
+                  isPopular: false,
+                  date: new Date().toISOString(),
+                  uid: user.uid,
+                };
+                await addUserMeal(user.uid, mealToSave);
+              } else {
+                alert('You must be signed in to add an ingredient.');
+                return;
+              }
+              await loadMeals();
               setModalVisible(false);
               setNewIngredient({ name: '', calories: '', carbs: '', lipids: '', proteins: '' });
             } catch (error) {
@@ -490,7 +491,7 @@ modalContainer: {
 },
 modalContent: {
   width: '90%',
-  backgroundColor: '#fff',
+  backgroundColor: theme.colors.card, // même fond que le reste de l'app
   borderRadius: 10,
   padding: 20,
   elevation: 5,
@@ -498,13 +499,20 @@ modalContent: {
 modalTitle: {
   fontSize: 20,
   fontWeight: 'bold',
-  marginBottom: 10,
+  marginBottom: 15,
+  textAlign: 'center',
+  color: theme.colors.text,
 },
 input: {
   borderBottomWidth: 1,
-  borderColor: '#ccc',
-  paddingVertical: 8,
-  marginBottom: 10,
+  borderColor: theme.colors.border,
+  paddingVertical: 10,
+  marginBottom: 12,
+  fontSize: 16,
+  color: theme.colors.text,
+  backgroundColor: theme.colors.background, // pour un fond doux
+  borderRadius: 5,
+  paddingHorizontal: 8,
 },
 modalButtons: {
   flexDirection: 'row',
@@ -512,23 +520,28 @@ modalButtons: {
   marginTop: 20,
 },
 modalCancel: {
-  backgroundColor: '#ccc',
-  padding: 10,
+  backgroundColor: theme.colors.muted,
+  paddingVertical: 12,
+  paddingHorizontal: 10,
   borderRadius: 5,
   flex: 1,
-  marginRight: 5,
+  marginRight: 10,
+  alignItems: 'center',
 },
 modalSave: {
   backgroundColor: theme.colors.primary,
-  padding: 10,
+  paddingVertical: 12,
+  paddingHorizontal: 10,
   borderRadius: 5,
   flex: 1,
-  marginLeft: 5,
+  marginLeft: 10,
+  alignItems: 'center',
 },
 modalButtonText: {
   color: 'white',
   textAlign: 'center',
   fontWeight: 'bold',
+  fontSize: 16,
 },
 
 });

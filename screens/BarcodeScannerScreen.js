@@ -633,7 +633,7 @@ const styles = StyleSheet.create({
   },
   productBrand: { 
     fontSize: 16, 
-    color: theme.colors.muted, 
+    color: theme.colors.white, 
     marginBottom: 15 
   },
   allergensWarning: { 

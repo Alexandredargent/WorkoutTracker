@@ -12,6 +12,7 @@ const colors = {
   error: '#E91E63',
   border: '#00B6E0',
   shadow: '#000',
+  white: 'white',
 };
 /*  //Ui V1
 const colors = {

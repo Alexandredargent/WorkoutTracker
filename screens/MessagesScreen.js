@@ -39,11 +39,11 @@ const MessagesScreen = ({ navigation }) => {
     );
   };
 
-  // Add friend (simplified)
+  // Ajout d'un ami
   const handleAddFriend = async (friendId) => {
     setRequestingId(friendId); // show feedback
     try {
-      // Prevent duplicate requests
+     // Vérifie qu'il n'y a pas déjà une demande en attente entre ces deux utilisateurs   
       const q = query(
         collection(db, 'friendRequests'),
         where('senderId', '==', userId),
@@ -53,10 +53,10 @@ const MessagesScreen = ({ navigation }) => {
       const snapshot = await getDocs(q);
       if (!snapshot.empty) return;
 
-      // Get sender username
+      // Récupère le nom d'utilisateur de l'expéditeur (pour l'afficher dans la notification)
       const senderDoc = await getDoc(doc(db, 'users', userId));
       const senderUsername = senderDoc.data().username;
-
+      // Crée une nouvelle demande d'ami dans la collection friendRequests
       await addDoc(collection(db, 'friendRequests'), {
         senderId: userId,
         senderUsername,
@@ -65,12 +65,12 @@ const MessagesScreen = ({ navigation }) => {
         createdAt: serverTimestamp(),
       });
 
-      // Show confirmation and clear search/users
+      // Affiche une confirmation et réinitialise la recherche
       Alert.alert('Invitation sent', 'Your friend invitation has been sent.');
       setSearch('');
       setUsers([]);
     } finally {
-      setRequestingId(null);
+      setRequestingId(null); // Réactive le bouton après traitement
     }
   };
 

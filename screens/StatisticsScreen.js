@@ -211,7 +211,11 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.lg,
   },
   sectionTitle: {
-    ...theme.typography.sectionTitle,
+   
+    fontSize: 20,
+    color: 'white',
+    textAlign: 'center',
+    fontWeight: '600',
   },
   totalWorkouts: {
     fontSize: 48,

@@ -74,7 +74,9 @@ const NotificationScreen = () => {
         keyExtractor={item => item.id}
         renderItem={({ item }) => (
           <View style={styles.requestContainer}>
-            <Text>{item.senderUsername} wants to be your friend!</Text>
+            <Text style={styles.requestText}>
+              <Text style={{ fontWeight: 'bold', color: theme.colors.primary }}>{item.senderUsername}</Text> wants to be your friend!
+            </Text>
             <View style={styles.buttonContainer}>
               <TouchableOpacity onPress={() => handleAcceptRequest(item.id)} style={styles.acceptButton}>
                 <Text style={styles.buttonText}>Accept</Text>
@@ -94,42 +96,62 @@ const NotificationScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-     justifyContent: 'center', 
-    alignItems: 'center',
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.lg,
   },
   background: {
     flex: 1,
-    backgroundColor: '#101924',
+    backgroundColor: theme.colors.background,
   },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
-    marginBottom: 16,
+    color: theme.colors.primary,
+    marginBottom: theme.spacing.lg,
+    textAlign: 'center',
   },
   requestContainer: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    backgroundColor: theme.colors.card,
+    borderRadius: 16,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.md,
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  requestText: {
+    color: theme.colors.text,
+    fontSize: 16,
+    marginBottom: theme.spacing.sm,
+    fontWeight: '500',
   },
   buttonContainer: {
     flexDirection: 'row',
+    gap: theme.spacing.sm,
   },
   acceptButton: {
-    backgroundColor: 'green',
-    padding: 8,
-    borderRadius: 4,
-    marginRight: 8,
+    backgroundColor: theme.colors.primary,
+    paddingVertical: 8,
+    paddingHorizontal: 18,
+    borderRadius: 20,
+    marginRight: theme.spacing.sm,
+    alignItems: 'center',
   },
   declineButton: {
-    backgroundColor: 'red',
-    padding: 8,
-    borderRadius: 4,
+    backgroundColor: theme.colors.error,
+    paddingVertical: 8,
+    paddingHorizontal: 18,
+    borderRadius: 20,
+    alignItems: 'center',
   },
   buttonText: {
     color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 15,
   },
 });
 
