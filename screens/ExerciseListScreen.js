@@ -34,14 +34,6 @@ import { collection, getDocs } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { getMuscleIcon } from '../utils/muscleIcons';
 
-const searchExercises = async (searchText) => {
-  const snapshot = await getDocs(collection(db, 'exercises'));
-  const allExercises = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-  return allExercises.filter((ex) =>
-    (ex.Name || '').toLowerCase().includes(searchText.toLowerCase())
-  );
-};
-
 const ExerciseListScreen = ({ navigation, route }) => {
   const [exercises, setExercises] = useState([]);
   const [filter, setFilter] = useState('all');
@@ -55,6 +47,8 @@ const ExerciseListScreen = ({ navigation, route }) => {
   const [filtersVisible, setFiltersVisible] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
   const [favoriteExercises, setFavoriteExercises] = useState([]);
+  const [allExercisesCache, setAllExercisesCache] = useState([]); // Cache pour tous les exercices
+  const [cacheLoaded, setCacheLoaded] = useState(false);
 
   const difficultyLevels = [
     'Novice',
@@ -99,63 +93,119 @@ const ExerciseListScreen = ({ navigation, route }) => {
 
   // CHARGEMENT PRINCIPAL
   const loadExercises = async (startAfterDoc = null, append = false) => {
-    try {
-      setLoading(true);
-      const user = auth.currentUser;
-      let userExercises = [];
-      
-      if (filter === 'favorites') {
-        // Load favorite exercises
-        if (user) {
-          const { exerciseList: favExercises } = await fetchFavoriteExercises(user.uid);
-          const favoriteIds = favExercises.map(f => f.id);
+  console.log(`[loadExercises] Début - Filter: ${filter}, SelectedMuscleGroup: "${selectedMuscleGroup}", SelectedEquipment: "${selectedEquipment}", SelectedDifficulty: "${selectedDifficulty}"`);
+  try {
+    setLoading(true);
+    const user = auth.currentUser;
+    let userExercisesData = [];
+    
+    if (filter === 'favorites') {
+      console.log('[loadExercises] Mode favoris');
+      if (user) {
+        try {
+          // Récupérer les IDs des exercices favoris
+          const { exerciseList: favoriteIds } = await fetchFavoriteExercises(user.uid);
+          console.log('[loadExercises] Favoris IDs récupérés:', favoriteIds.map(f => f.exerciseId));
+          
           if (favoriteIds.length > 0) {
-            // Récupère tous les exercices de la base
-            const snapshot = await getDocs(collection(db, "exercises"));
-            const allExercises = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            // Filtre uniquement ceux qui sont dans les favoris
-            const favFull = allExercises.filter(ex => favoriteIds.includes(ex.id));
-            setExercises(favFull);
-            setFavoriteExercises(favoriteIds);
+            // Récupérer tous les exercices de la collection globale
+            const globalExercisesSnapshot = await getDocs(collection(db, "exercises"));
+            const allGlobalExercises = globalExercisesSnapshot.docs.map(doc => ({ 
+              id: doc.id, 
+              ...doc.data() 
+            }));
+            
+            // Récupérer les exercices utilisateur
+            const { exerciseList: allUserExercises } = await fetchUserExercises(user.uid, 1000); // Augmenter la limite pour récupérer tous les exercices utilisateur
+            
+            // Combiner tous les exercices
+            const allExercises = [...allGlobalExercises, ...allUserExercises];
+            
+            // Filtrer seulement les exercices favoris
+            const favoriteExerciseIds = favoriteIds.map(f => f.exerciseId);
+            const favoriteExercisesData = allExercises.filter(exercise => 
+              favoriteExerciseIds.includes(exercise.id)
+            );
+            
+            console.log('[loadExercises] Exercices favoris trouvés:', favoriteExercisesData.length);
+            setExercises(favoriteExercisesData);
+            setFavoriteExercises(favoriteExerciseIds);
           } else {
+            console.log('[loadExercises] Aucun favori trouvé');
             setExercises([]);
             setFavoriteExercises([]);
           }
+        } catch (error) {
+          console.error('[loadExercises] Erreur lors du chargement des favoris:', error);
+          setExercises([]);
+          setFavoriteExercises([]);
         }
       } else {
-        // Load regular exercises
+        console.log('[loadExercises] Utilisateur non connecté pour les favoris');
+        setExercises([]);
+        setFavoriteExercises([]);
+      }
+    } else {
+      console.log('[loadExercises] Mode non-favoris');
+      
+      let globalList = [];
+      let newLastDoc = lastDoc;
+
+      if (filter === 'all') {
+        // Pour l'onglet "All", charger SEULEMENT les exercices globaux
+        console.log('[loadExercises] Chargement des exercices globaux pour onglet "all"');
+        const serverFilterParams = {};
+        
+        if (selectedMuscleGroup) {
+          serverFilterParams.targetMuscleGroup = selectedMuscleGroup;
+        }
+        if (selectedEquipment) {
+          serverFilterParams.primaryEquipment = selectedEquipment;
+        }
+        if (selectedDifficulty) {
+          serverFilterParams.difficultyLevel = selectedDifficulty;
+        }
+        
+        const { exerciseList: fetchedGlobalList, lastDoc: fetchedLastDoc } = await fetchExercises(50, startAfterDoc, serverFilterParams);
+        globalList = fetchedGlobalList;
+        newLastDoc = fetchedLastDoc;
+        console.log('[loadExercises] Exercices globaux reçus:', globalList.length);
+        
+        // NE PAS charger les exercices utilisateur pour l'onglet "All"
+        setExercises(globalList);
+        
+      } else if (filter === 'created') {
+        // Pour l'onglet 'created', charger seulement les exercices utilisateur
         if (user) {
           const { exerciseList: userList } = await fetchUserExercises(user.uid, 50, startAfterDoc);
-          userExercises = userList;
-        }
-        const { exerciseList: globalList, lastDoc: newLastDoc } = await fetchExercises(50, startAfterDoc);
-        const newExercises = [...userExercises, ...globalList.filter(e => !userExercises.some(u => u.Name === e.Name))];
-
-        if (append) {
-          setExercises(prev => [...prev, ...newExercises]);
+          setExercises(userList);
+          console.log('[loadExercises] Exercices utilisateur chargés:', userList.length);
         } else {
-          setExercises(newExercises);
+          setExercises([]);
         }
-        setLastDoc(newLastDoc);
       }
-
-      // Load favorite exercise IDs for heart icons
-      if (user && filter !== 'favorites') {
-        const { exerciseList: favExercises } = await fetchFavoriteExercises(user.uid);
-        setFavoriteExercises(favExercises.map(ex => ex.id));
+      
+      setLastDoc(newLastDoc);
+      
+      // Charger les IDs des favoris pour les icônes cœur
+      if (user) {
+        const { exerciseList: favs } = await fetchFavoriteExercises(user.uid);
+        setFavoriteExercises(favs.map(ex => ex.exerciseId));
       }
-    } catch (error) {
-      console.error('Error fetching exercises:', error);
-    } finally {
-      setLoading(false);
     }
-  };
+  } catch (error) {
+    console.error('[loadExercises] Erreur:', error);
+  } finally {
+    setLoading(false);
+    console.log('[loadExercises] Fin');
+  }
+};
 
   const loadExercisesAndResetPagination = useCallback(async () => {
-  setExercises([]);   // <-- Vide la liste, donc FlatList sera vide AVANT le fetch, donc pas de flash
-  setLastDoc(null);
-  await loadExercises(null);
-}, [filter]);
+    setExercises([]);
+    setLastDoc(null);
+    await loadExercises(null);
+  }, [filter, selectedMuscleGroup, selectedEquipment, selectedDifficulty]); // AJOUTEZ les états de filtre ici
 
 
 
@@ -176,132 +226,62 @@ const ExerciseListScreen = ({ navigation, route }) => {
 useEffect(() => {
   // On met à jour la liste affichée uniquement quand le loading est terminé
   if (!loading) {
-    setPreviousExercises(getFilteredExercises());
+    setPreviousExercises(exercises); // Utilisez directement exercises au lieu de getFilteredExercises()
   }
-  // eslint-disable-next-line
-}, [loading, exercises, searchQuery, searchResults, filter, selectedMuscleGroup, selectedEquipment, selectedDifficulty]);
+}, [loading, exercises]);
 
-
-  useEffect(() => {
-    if (searchQuery.trim() === "") {
-      setSearchResults([]);
-      return;
-    }
-    if (filter === 'favorites') {
-      // Recherche uniquement dans les favoris déjà chargés
-      setSearchResults(
-        exercises.filter(ex =>
-          (ex.Name || '').toLowerCase().includes(searchQuery.toLowerCase())
-        )
-      );
-    } else {
-      const fetchResults = async () => {
-        const results = await searchExercises(searchQuery.trim());
-        setSearchResults(results);
-      };
-      fetchResults();
-    }
-  }, [searchQuery, filter, favoriteExercises, exercises]);
 
   // FILTRES
- const applyFilters = (data) => {
-  let filtered = [...data];
-
-  // FILTRES (muscle, equipment, difficulty) — always apply, but relaxed
-  if (selectedMuscleGroup && selectedMuscleGroup !== "") {
-    filtered = filtered.filter(
-      (exercise) =>
-        !exercise["Target Muscle Group"] ||
-        exercise["Target Muscle Group"] === selectedMuscleGroup
-    );
-  }
-  if (selectedEquipment && selectedEquipment !== "") {
-    filtered = filtered.filter(
-      (exercise) =>
-        !exercise["Primary Equipment"] ||
-        exercise["Primary Equipment"] === selectedEquipment
-    );
-  }
-  if (selectedDifficulty && selectedDifficulty !== "") {
-    filtered = filtered.filter(
-      (exercise) =>
-        !exercise["Difficulty Level"] ||
-        exercise["Difficulty Level"] === selectedDifficulty
-    );
-  }
-
-  // Filtre "created" : seulement les exercices créés par l'utilisateur
-  if (filter === 'created') {
-    const user = auth.currentUser;
-    if (user) {
-      filtered = filtered.filter((exercise) => exercise.uid === user.uid);
-    } else {
-      filtered = [];
-    }
-  }
-
-  // Recherche (searchQuery)
-  if (searchQuery.trim()) {
-    filtered = filtered.filter((exercise) =>
-      (exercise.Name || '').toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }
-  return filtered;
-};
-
-
+  // MODIFIEZ getFilteredExercises pour inclure searchResults
   const getFilteredExercises = () => {
+  console.log(`[getFilteredExercises] Début - exercises.length: ${exercises.length}, searchQuery: "${searchQuery}", searchResults.length: ${searchResults.length}`);
+  
+  // Si une recherche est active, utiliser searchResults
+  if (searchQuery.trim()) {
+    console.log('[getFilteredExercises] Utilisation des searchResults car searchQuery non vide');
+    return searchResults;
+  }
+  
+  // Sinon, utiliser la logique de filtrage normale
   let filtered = [...exercises];
   const user = auth.currentUser;
 
-  // First apply tab filter (created/favorites)
+  // Pour l'onglet 'created', appliquer le filtre utilisateur
   if (filter === 'created') {
     if (user) {
       filtered = filtered.filter(exercise => exercise.uid === user.uid);
     } else {
       filtered = [];
     }
-  } else if (filter === 'favorites') {
-    filtered = filtered.filter(exercise => favoriteExercises.includes(exercise.id));
   }
 
-  // Apply search filter first (from searchResults or current filtered list)
-  if (searchQuery.trim()) {
-    if (filter === 'favorites' || filter === 'created') {
-      // For favorites/created, search within the already filtered results
-      filtered = filtered.filter((exercise) =>
-        (exercise.Name || '').toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    } else {
-      // For 'all', use searchResults if available
-      filtered = searchQuery.trim() ? searchResults : filtered;
-    }
-  }
-
-  // Apply additional filters when filters are visible (for all tabs)
-  if (filtersVisible) {
+  // IMPORTANT: Si nous sommes sur l'onglet 'all' ET qu'un filtre serveur a été appliqué,
+  // ne pas re-filtrer côté client car les données sont déjà filtrées
+  const hasServerFilters = selectedMuscleGroup || selectedEquipment || selectedDifficulty;
+  
+  if (filter !== 'all' || !hasServerFilters) {
+    // Appliquer les filtres côté client seulement si pas de filtres serveur
     if (selectedMuscleGroup && selectedMuscleGroup !== "") {
-      filtered = filtered.filter(exercise => 
-        exercise["Target Muscle Group"] && 
+      filtered = filtered.filter(exercise =>
         exercise["Target Muscle Group"] === selectedMuscleGroup
       );
     }
     if (selectedEquipment && selectedEquipment !== "") {
-      filtered = filtered.filter(exercise => 
-        exercise["Primary Equipment"] && 
+      filtered = filtered.filter(exercise =>
         exercise["Primary Equipment"] === selectedEquipment
       );
     }
     if (selectedDifficulty && selectedDifficulty !== "") {
-      filtered = filtered.filter(exercise => 
-        exercise["Difficulty Level"] && 
+      filtered = filtered.filter(exercise =>
         exercise["Difficulty Level"] === selectedDifficulty
       );
     }
   }
   
+  console.log(`[getFilteredExercises] Résultat final: ${filtered.length} exercices`);
   return filtered;
 };
+
 
   // UI
   const getEmptyStateText = () => {
@@ -476,14 +456,10 @@ useEffect(() => {
   };
 
   const renderExerciseItem = ({ item }) => {
-  const displayedExercises = loading
-    ? previousExercises
-    : getFilteredExercises();
-
-    const iconSource = getMuscleIcon(item["Target Muscle Group"]);
-    const user = auth.currentUser;
-    const isCreatedByUser = item.uid === user?.uid;
-    const isFavorite = favoriteExercises.includes(item.id);
+  const iconSource = getMuscleIcon(item["Target Muscle Group"]);
+  const user = auth.currentUser;
+  const isCreatedByUser = item.uid === user?.uid;
+  const isFavorite = favoriteExercises.includes(item.id);
 
     return (
       <TouchableOpacity
@@ -534,53 +510,100 @@ useEffect(() => {
     );
   };
 
-  const loadAllExercises = useCallback(async () => {
-    setLoading(true);
-    try {
-      const user = auth.currentUser;
-      let userExercises = [];
-      let globalExercises = [];
-      let favExerciseIds = [];
-
-      if (user) {
-        const { exerciseList: userList } = await fetchUserExercises(user.uid);
-        userExercises = userList;
-        const { exerciseList: favList } = await fetchFavoriteExercises(user.uid);
-        favExerciseIds = favList.map(f => f.id);
-      }
-      const { exerciseList: globalList } = await fetchExercises();
-      globalExercises = globalList;
-
-      // Merge and remove duplicates by id
-      let allExercises = [
-        ...userExercises,
-        ...globalExercises.filter(g => !userExercises.some(u => u.id === g.id))
-      ];
-
-      // Find missing favorite exercises (not in allExercises)
-      const missingFavIds = favExerciseIds.filter(
-        favId => !allExercises.some(ex => ex.id === favId)
-      );
-      if (missingFavIds.length > 0) {
-        // Fetch missing favorites from global collection
-        const snapshot = await getDocs(collection(db, "exercises"));
-        const allGlobal = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const missingFavs = allGlobal.filter(ex => missingFavIds.includes(ex.id));
-        allExercises = [...allExercises, ...missingFavs];
-      }
-
-      setExercises(allExercises);
-      setFavoriteExercises(favExerciseIds);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
+  // AJOUTEZ un useEffect pour recharger quand les filtres (tabs OU pickers) changent
   useEffect(() => {
-  loadAllExercises();
-}, []);
+    loadExercisesAndResetPagination();
+  }, [filter, selectedMuscleGroup, selectedEquipment, selectedDifficulty, loadExercisesAndResetPagination]); // MODIFIEZ les dépendances
+
+  // MODIFIEZ également useEffect pour les filtres additionnels
+  useEffect(() => {
+    // Quand les filtres additionnels changent, on n'a pas besoin de recharger
+    // On se contente de mettre à jour la liste filtrée
+    if (!loading) {
+      setPreviousExercises(getFilteredExercises());
+    }
+  }, [selectedMuscleGroup, selectedEquipment, selectedDifficulty, exercises, searchQuery, favoriteExercises, loading]);
+
+  // SUPPRIMEZ l'ancien useEffect qui appelait loadAllExercises
+  // useEffect(() => {
+  //   loadAllExercises();
+  // }, []);
+
+  // Charger le cache une seule fois
+  useEffect(() => {
+    const loadAllExercisesForSearch = async () => {
+      if (cacheLoaded) return; // Éviter de recharger si déjà fait
+      
+      try {
+        const user = auth.currentUser;
+        
+        // Récupérer les exercices globaux
+        const globalSnapshot = await getDocs(collection(db, 'exercises'));
+        const globalExercises = globalSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+        
+        let allExercises = [...globalExercises];
+        
+        // Ajouter les exercices utilisateur si connecté
+        if (user) {
+          try {
+            const { exerciseList: userExercises } = await fetchUserExercises(user.uid, 1000);
+            const filteredUserExercises = userExercises.filter(userEx => 
+              !globalExercises.some(globalEx => globalEx.Name === userEx.Name)
+            );
+            allExercises = [...globalExercises, ...filteredUserExercises];
+          } catch (error) {
+            console.error('Erreur lors de la récupération des exercices utilisateur:', error);
+          }
+        }
+        
+        setAllExercisesCache(allExercises);
+        setCacheLoaded(true);
+      } catch (error) {
+        console.error('Erreur lors du chargement du cache:', error);
+      }
+    };
+    
+    loadAllExercisesForSearch();
+  }, []); // Se charge une seule fois
+
+  // UseEffect de recherche simplifié
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setSearchResults([]);
+      return;
+    }
+    
+    if (!cacheLoaded) {
+      setSearchResults([]); // Attendre que le cache soit chargé
+      return;
+    }
+    
+    if (filter === 'favorites') {
+      // Recherche dans les favoris déjà chargés
+      setSearchResults(
+        exercises.filter(ex =>
+          (ex.Name || '').toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      );
+    } else {
+      // Utiliser le cache pour la recherche
+      let results = allExercisesCache.filter((ex) =>
+        (ex.Name || '').toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      
+      // Appliquer le filtre d'onglet
+      if (filter === 'created') {
+        const user = auth.currentUser;
+        if (user) {
+          results = results.filter(ex => ex.uid === user.uid);
+        } else {
+          results = [];
+        }
+      }
+      
+      setSearchResults(results);
+    }
+  }, [searchQuery, filter, exercises, allExercisesCache, cacheLoaded]);
 
   return (
     <ImageBackground

@@ -1,21 +1,58 @@
-import { collection, getDocs, query, limit, startAfter, orderBy, addDoc, doc, deleteDoc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, query, limit, startAfter, orderBy, addDoc, doc, deleteDoc, getDoc, updateDoc, setDoc, where } from 'firebase/firestore'; // Ajoutez 'where'
 import { db } from './firebase';
 
-export const fetchExercises = async (limitCount = 50, startAfterDoc = null) => {
+export const fetchExercises = async (limitCount = 50, startAfterDoc = null, filterParams = {}) => {
+  console.log('[fetchExercises] Appelée avec:', { limitCount, startAfterDoc: !!startAfterDoc, filterParams });
   try {
     const exercisesCollection = collection(db, 'exercises');
-    let exercisesQuery = query(exercisesCollection, orderBy('Name'), limit(limitCount));
-    if (startAfterDoc) {
-      exercisesQuery = query(exercisesCollection, orderBy('Name'), limit(limitCount), startAfter(startAfterDoc));
+    let exercisesQuery = query(exercisesCollection);
+
+    // Filtre par groupe musculaire
+    if (filterParams.targetMuscleGroup) {
+      console.log('[fetchExercises] Application du filtre Target Muscle Group:', filterParams.targetMuscleGroup);
+      exercisesQuery = query(exercisesQuery, where('Target Muscle Group', '==', filterParams.targetMuscleGroup));
     }
+
+    // Filtre par équipement
+    if (filterParams.primaryEquipment) {
+      console.log('[fetchExercises] Application du filtre Primary Equipment:', filterParams.primaryEquipment);
+      exercisesQuery = query(exercisesQuery, where('Primary Equipment', '==', filterParams.primaryEquipment));
+    }
+
+    // Filtre par difficulté
+    if (filterParams.difficultyLevel) {
+      console.log('[fetchExercises] Application du filtre Difficulty Level:', filterParams.difficultyLevel);
+      exercisesQuery = query(exercisesQuery, where('Difficulty Level', '==', filterParams.difficultyLevel));
+    }
+
+    exercisesQuery = query(exercisesQuery, orderBy('Name'));
+    exercisesQuery = query(exercisesQuery, limit(limitCount));
+    if (startAfterDoc) {
+      exercisesQuery = query(exercisesQuery, startAfter(startAfterDoc));
+    }
+
+    console.log('[fetchExercises] Exécution de la requête Firestore...');
     const exerciseSnapshot = await getDocs(exercisesQuery);
+    console.log('[fetchExercises] Nombre de documents retournés:', exerciseSnapshot.docs.length);
+
     const exerciseList = exerciseSnapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data()
     }));
-    return { exerciseList, lastDoc: exerciseSnapshot.docs[exerciseSnapshot.docs.length - 1] };
+
+    if (exerciseList.length > 0) {
+      console.log('[fetchExercises] Premier exercice retourné:', {
+        Name: exerciseList[0].Name,
+        'Target Muscle Group': exerciseList[0]['Target Muscle Group'],
+        'Primary Equipment': exerciseList[0]['Primary Equipment'],
+        'Difficulty Level': exerciseList[0]['Difficulty Level']
+      });
+    }
+
+    const lastVisibleDoc = exerciseSnapshot.docs[exerciseSnapshot.docs.length - 1];
+    return { exerciseList, lastDoc: lastVisibleDoc };
   } catch (error) {
-    console.error('Erreur lors de la récupération des exercices:', error);
+    console.error('[fetchExercises] Erreur:', error);
     throw error;
   }
 };
