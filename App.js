@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Platform, ImageBackground, StyleSheet } from 'react-native';
+import { Platform, ImageBackground, StyleSheet, StatusBar } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import AppLoading from 'expo-app-loading';
+
 import { useFonts, Iceland_400Regular } from '@expo-google-fonts/iceland';
 import MainNavigator from './components/MainNavigator';
 import LoginScreen from './screens/LoginScreen';
@@ -22,6 +22,10 @@ import { auth } from './services/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import theme from './styles/theme'; // ton thème avec backgroundImage
 import SelectProgramScreen from './screens/SelectProgramScreen';
+import HomeScreen from './screens/HomeScreen';
+import DiaryScreen from './screens/DiaryScreen';
+import StatisticsScreen from './screens/StatisticsScreen';
+import ProgramsScreen from './screens/ProgramsScreen';
 const Stack = createNativeStackNavigator();
 
 export default function App() {
@@ -38,21 +42,43 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  if (!fontsLoaded) return <AppLoading />;
-
+  if (!fontsLoaded) return null;
+;
   return (
-    
+    <>
+      <StatusBar 
+        barStyle="light-content" 
+        backgroundColor="black" 
+        
+      />
       <NavigationContainer>
         <Stack.Navigator
-  initialRouteName={user ? "Main" : "Login"}
-  screenOptions={{
-    animation: 'fade',
-    animationDuration: 300,
-    // AJOUTE ICI !
-     contentStyle: { backgroundColor: '#101924' }
-  }}
->
-
+          initialRouteName={user ? "Main" : "Login"}
+          screenOptions={{
+            animation: 'fade',
+            animationDuration: 300,
+            contentStyle: { backgroundColor: '#101924' },
+            headerStyle: {
+              backgroundColor: theme.colors.background,
+              height: 200, // Même taille partout
+            },
+            headerTransparent: false,
+            headerTintColor: 'black',
+            headerTitleStyle: {
+              color: 'black',
+              fontSize: 18,
+              fontWeight: 'bold',
+            },
+            headerLeftContainerStyle: {
+              paddingLeft: Platform.OS === 'ios' ? 16 : 10,
+              paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+            },
+            headerTitleContainerStyle: {
+              paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight + 10 : 0,
+            },
+            headerBackTitleVisible: false,
+          }}
+        >
           <Stack.Screen name="Login" options={{ headerShown: false }}>
             {props => <LoginScreen {...props} setUser={setUser} />}
           </Stack.Screen>
@@ -75,7 +101,7 @@ export default function App() {
           
         </Stack.Navigator>
       </NavigationContainer>
-    
+    </>
   );
 }
 

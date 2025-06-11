@@ -184,7 +184,7 @@ const MainNavigator = ({ user, setUser, navigation }) => {
     tabBarLabelStyle: styles.tabBarLabel,
     headerShown: false,
   })}
-  lazy={true} // charge les écrans à la demande
+  // charge les écrans à la demande
   sceneContainerStyle={{ backgroundColor: theme.colors.background }} // évite les flashs blancs entre transitions
 >
 
@@ -202,13 +202,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
+    //backgroundColor: '#175c5b',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'ios' ? 30 : 30,
+    paddingTop: Platform.OS === 'ios' ? 20 : 20,
     paddingBottom: 4,
     zIndex: 2,
   },

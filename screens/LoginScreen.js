@@ -15,7 +15,8 @@ import {
   Keyboard,
   ScrollView
 } from 'react-native';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
+
 import { auth } from '../services/firebase';
 import theme from '../styles/theme';
 
@@ -36,20 +37,44 @@ const LoginScreen = ({ navigation, setUser }) => {
   }, []);
 
   const handleLogin = async () => {
-    Keyboard.dismiss();
-    setIsLoading(true);
-    setError('');
-    try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      setUser(userCredential.user);
-      navigation.navigate('Main');
-    } catch (error) {
-      setError('Invalid email or password. Please try again.');
-      Alert.alert('Login Error', error.message);
-    } finally {
+  Keyboard.dismiss();
+  setIsLoading(true);
+  setError('');
+  try {
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    // Vérifie si l'email est vérifié
+    if (!user.emailVerified) {
+      setError("Thanks for verifying your email address before logging in.");
+      // (Optionnel) propose de renvoyer l'email de vérification
+      // await sendEmailVerification(user); // il faut importer sendEmailVerification
+      Alert.alert(
+        "Email not verified",
+        "Please verify your email address by clicking on the link received. If needed, you can resend the confirmation email.",
+        [
+          { text: "Re-Send", onPress: async () => {
+            await sendEmailVerification(user);
+            Alert.alert("E-mail sent", "A new verification email has been sent to your address.");
+          }},
+          { text: "OK" }
+        ]
+      );
       setIsLoading(false);
+      return;
     }
-  };
+
+    // Si email vérifié : accès à l'app
+    setUser(user);
+    navigation.navigate('Main');
+  } catch (error) {
+    setError('Invalid email or password. Please try again.');
+    Alert.alert('Login Error', error.message);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
 
   const handleNavigation = (screenName) => {
     Keyboard.dismiss();
@@ -57,77 +82,54 @@ const LoginScreen = ({ navigation, setUser }) => {
   };
 
   return (
-    
- <ImageBackground
-  source={theme.backgroundImage.source}
-  resizeMode={theme.backgroundImage.defaultResizeMode}
-  style={styles.background}
->
-  <KeyboardAvoidingView
-    behavior={Platform.OS === "ios" ? "padding" : "height"}
-    style={styles.keyboardAvoiding}
-    keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+  <ScrollView
+    contentContainerStyle={styles.scrollContainer}
+    keyboardShouldPersistTaps="handled"
+    showsVerticalScrollIndicator={false}
+    bounces={false}
   >
-    <View style={styles.content}>
-      <Animated.View style={{ opacity: fadeAnim, alignItems: 'center', width: '100%' }}>
-        {/* <Image
-          source={require('../assets/Applogo.png')}
-             style={styles.logo}
-        /> */}
-            
-
-
-        <Image source={require('../assets/appTitleText.png')} style={{ width: 300, height: 300 }} />
-    
-        <View style={styles.inputContainer}>
-          <TextInput
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            style={styles.input}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            onSubmitEditing={handleLogin}
-          />
-          <TextInput
-            placeholder="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            style={styles.input}
-            onSubmitEditing={handleLogin}
-          />
-        </View>
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-        <TouchableOpacity
-          style={[styles.button, isLoading && styles.buttonDisabled]}
-          onPress={handleLogin}
-          disabled={isLoading}
-        >
-          <Text style={styles.buttonText}>
-            {isLoading ? 'Logging in...' : 'Log In'}
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => handleNavigation('SignUp')}
-          style={styles.linkButton}
-        >
-          <Text style={theme.link}>
-            Don't have an account? Sign Up
-          </Text>
-
-        </TouchableOpacity>
-        
-      </Animated.View>
-    </View>
-    
- </KeyboardAvoidingView>
-  
-</ImageBackground>
-
-
-
-
+    <Animated.View style={{ opacity: fadeAnim, alignItems: 'center', width: '100%' }}>
+      <Image source={require('../assets/appTitleText.png')} style={{ width: 300, height: 300 }} />
+      
+      <View style={styles.inputContainer}>
+        <TextInput
+          placeholder="Email"
+          value={email}
+          onChangeText={setEmail}
+          style={styles.input}
+          keyboardType="email-address"
+          autoCapitalize="none"
+          onSubmitEditing={handleLogin}
+        />
+        <TextInput
+          placeholder="Password"
+          value={password}
+          onChangeText={setPassword}
+          secureTextEntry
+          style={styles.input}
+          onSubmitEditing={handleLogin}
+        />
+      </View>
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+      <TouchableOpacity
+        style={[styles.button, isLoading && styles.buttonDisabled]}
+        onPress={handleLogin}
+        disabled={isLoading}
+      >
+        <Text style={styles.buttonText}>
+          {isLoading ? 'Logging in...' : 'Log In'}
+        </Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        onPress={() => handleNavigation('SignUp')}
+        style={styles.linkButton}
+      >
+        <Text style={theme.link}>
+          Don't have an account? Sign Up
+        </Text>
+      </TouchableOpacity>
+    </Animated.View>
+  </ScrollView>
   );
 };
 
@@ -155,12 +157,12 @@ content: {
   scrollContainer: {
     flexGrow: 1,
     justifyContent: 'center',
+    padding: theme.spacing.lg,
+    minHeight: '100%',
   },
-  
   logo: {
     width: 200,
     height: 200,
-    
   },
   title: {
     ...theme.typography.sectionTitleLogo,    
@@ -201,7 +203,6 @@ content: {
     marginBottom: theme.spacing.sm,
     textAlign: 'center',
   },
-  
   linkButton: {
     marginTop: theme.spacing.lg,
   },

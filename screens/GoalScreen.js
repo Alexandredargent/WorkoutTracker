@@ -11,11 +11,11 @@ import {
   Keyboard,
   Alert
 } from 'react-native';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
 import { auth, db } from '../services/firebase';
 import { doc, writeBatch, serverTimestamp } from 'firebase/firestore';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import theme from '../styles/theme';
+import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 
 const GoalScreen = () => {
   const [goal, setGoal] = useState('');
@@ -47,7 +47,8 @@ const GoalScreen = () => {
       // Create auth user
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
+      // send email verification
+      await sendEmailVerification(user);         
       // Create Firestore batch
       const batch = writeBatch(db);
 

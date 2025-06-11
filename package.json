@@ -9,15 +9,19 @@
     "web": "expo start --web",
     "upload:exercises": "node scripts/uploadExercises.js",
     "upload:ingredients": "node scripts/uploadIngredients.js",
-    "fix:exercises": "node scripts/fixExercisesFields.js"
+    "fix:exercises": "node scripts/fixExercisesFields.js",
+    "verify:email": "node scripts/verifyEmail.js"
   },
   "dependencies": {
+    
     "@emotion/react": "^11.13.3",
     "@emotion/styled": "^11.13.0",
     "@expo-google-fonts/iceland": "^0.3.0",
     "@expo-google-fonts/poppins": "^0.3.1",
+    "@expo/config-plugins": "~10.0.0",
+    "@expo/prebuild-config": "~9.0.0",
     "@expo/vector-icons": "^14.1.0",
-    "@react-native-async-storage/async-storage": "2.1.2",
+    "@react-native-async-storage/async-storage": "^2.1.2",
     "@react-native-community/datetimepicker": "8.3.0",
     "@react-native-picker/picker": "2.11.0",
     "@react-navigation/bottom-tabs": "^6.6.1",
@@ -27,11 +31,10 @@
     "axios": "^1.7.7",
     "date-fns": "^4.1.0",
     "dotenv": "^16.4.7",
-    "expo": "53.0.9",
-    "expo-app-loading": "^2.1.1",
-    "expo-barcode-scanner": "^13.0.1",
-    "expo-blur": "~14.1.4",
-    "expo-camera": "~16.1.6",
+    "expo": "53.0.11",
+    "expo-blur": "~14.1.5",
+    "expo-camera": "~16.1.7",
+    "expo-dev-client": "~5.2.0",
     "expo-font": "~13.3.1",
     "expo-sensors": "~14.1.4",
     "expo-status-bar": "~2.2.3",
@@ -43,7 +46,7 @@
     "picker": "^0.1.4",
     "react": "19.0.0",
     "react-dom": "19.0.0",
-    "react-native": "0.79.2",
+    "react-native": "0.79.3",
     "react-native-calendars": "^1.1307.0",
     "react-native-chart-kit": "^6.12.0",
     "react-native-collapsible": "^1.6.2",
@@ -53,9 +56,9 @@
     "react-native-paper": "^5.12.5",
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
-    "react-native-screens": "~4.10.0",
+    "react-native-screens": "~4.11.1",
     "react-native-snap-carousel": "^3.9.1",
-    "react-native-svg": "^15.11.2"
+    "react-native-svg": "15.11.2"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0"

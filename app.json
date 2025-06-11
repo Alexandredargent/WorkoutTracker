@@ -19,13 +19,19 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "jsEngine": "jsc"
+      "jsEngine": "jsc",
+      "package": "com.adargent.workouttracker"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "expo-font"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "05bdd278-f630-4dfc-bee4-7c3acacfbe52"
+      }
+    }
   }
 }
