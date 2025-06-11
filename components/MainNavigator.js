@@ -24,6 +24,9 @@ const MainNavigator = ({ user, setUser, navigation }) => {
   const [hasPendingRequests, setHasPendingRequests] = useState(false);
   const menuAnimation = useRef(new Animated.Value(0)).current;
 
+  // Ajoute une ref pour stocker le unsubscribe
+  const friendReqUnsubscribe = useRef(null);
+
   const toggleMenu = () => {
     const toValue = isMenuOpen ? 0 : 1;
     setIsMenuOpen(!isMenuOpen);
@@ -43,6 +46,11 @@ const MainNavigator = ({ user, setUser, navigation }) => {
         { text: "Cancel", style: "cancel" },
         { text: "Logout", style: "destructive", onPress: async () => {
             try {
+              // Nettoie le listener Firestore AVANT de déconnecter
+              if (friendReqUnsubscribe.current) {
+                friendReqUnsubscribe.current();
+                friendReqUnsubscribe.current = null;
+              }
               await signOut(auth);
               navigation.navigate('Login');
             } catch (error) {
@@ -69,10 +77,17 @@ const MainNavigator = ({ user, setUser, navigation }) => {
       where('recipientId', '==', userId),
       where('status', '==', 'pending')
     );
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    // Stocke le unsubscribe dans la ref
+    friendReqUnsubscribe.current = onSnapshot(q, (snapshot) => {
       setHasPendingRequests(!snapshot.empty);
     });
-    return unsubscribe;
+    // Nettoie à l'unmount
+    return () => {
+      if (friendReqUnsubscribe.current) {
+        friendReqUnsubscribe.current();
+        friendReqUnsubscribe.current = null;
+      }
+    };
   }, []);
 
   useEffect(() => {

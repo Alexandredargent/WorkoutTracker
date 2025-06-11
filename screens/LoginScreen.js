@@ -82,54 +82,55 @@ const LoginScreen = ({ navigation, setUser }) => {
   };
 
   return (
-  <ScrollView
-    contentContainerStyle={styles.scrollContainer}
-    keyboardShouldPersistTaps="handled"
-    showsVerticalScrollIndicator={false}
-    bounces={false}
+  <ImageBackground
+    source={theme.backgroundImage.source}
+    resizeMode={theme.backgroundImage.defaultResizeMode}
+    style={styles.background}
   >
-    <Animated.View style={{ opacity: fadeAnim, alignItems: 'center', width: '100%' }}>
-      <Image source={require('../assets/appTitleText.png')} style={{ width: 300, height: 300 }} />
-      
-      <View style={styles.inputContainer}>
-        <TextInput
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          style={styles.input}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          onSubmitEditing={handleLogin}
-        />
-        <TextInput
-          placeholder="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-          style={styles.input}
-          onSubmitEditing={handleLogin}
-        />
-      </View>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      <TouchableOpacity
-        style={[styles.button, isLoading && styles.buttonDisabled]}
-        onPress={handleLogin}
-        disabled={isLoading}
-      >
-        <Text style={styles.buttonText}>
-          {isLoading ? 'Logging in...' : 'Log In'}
-        </Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        onPress={() => handleNavigation('SignUp')}
-        style={styles.linkButton}
-      >
-        <Text style={theme.link}>
-          Don't have an account? Sign Up
-        </Text>
-      </TouchableOpacity>
-    </Animated.View>
-  </ScrollView>
+    <View style={[styles.content, { flex: 1 }]}>
+      <Animated.View style={{ opacity: fadeAnim, alignItems: 'center', width: '100%' }}>
+        <Image source={require('../assets/appTitleText.png')} style={{ width: 300, height: 300 }} />
+        
+        <View style={styles.inputContainer}>
+          <TextInput
+            placeholder="Email"
+            value={email}
+            onChangeText={setEmail}
+            style={styles.input}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            onSubmitEditing={handleLogin}
+          />
+          <TextInput
+            placeholder="Password"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            style={styles.input}
+            onSubmitEditing={handleLogin}
+          />
+        </View>
+        {error ? <Text style={styles.error}>{error}</Text> : null}
+        <TouchableOpacity
+          style={[styles.button, isLoading && styles.buttonDisabled]}
+          onPress={handleLogin}
+          disabled={isLoading}
+        >
+          <Text style={styles.buttonText}>
+            {isLoading ? 'Logging in...' : 'Log In'}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => handleNavigation('SignUp')}
+          style={styles.linkButton}
+        >
+          <Text style={theme.link}>
+            Don't have an account? Sign Up
+          </Text>
+        </TouchableOpacity>
+      </Animated.View>
+    </View>
+  </ImageBackground>
   );
 };
 
