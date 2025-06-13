@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Platform, ImageBackground, StyleSheet } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import AppLoading from 'expo-app-loading';
 import { useFonts, Iceland_400Regular } from '@expo-google-fonts/iceland';
 import MainNavigator from './components/MainNavigator';
 import LoginScreen from './screens/LoginScreen';
@@ -38,7 +37,6 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  if (!fontsLoaded) return <AppLoading />;
 
   return (
     
